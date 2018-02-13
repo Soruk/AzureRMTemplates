@@ -1,4 +1,4 @@
-# Button to deploy to Azure
+# FrontentVMScaleSetAndVMsBackend
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FSoruk%2FAzureRMTemplates%2Fmaster%2FFrontentVMScaleSetAndVMsBackend%2Ftemplate.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
@@ -6,7 +6,6 @@
     <img src="http://armviz.io/visualizebutton.png"/>
 </a>
 
-# FrontentVMScaleSetAndVMsBackend
 This templates deploys an IaaS enviroment to Azure Public Cloud.
 For given resource group, the templates deployes
 - 1 VNet with 3 Subnets: Frontend, Backend and Gateway
