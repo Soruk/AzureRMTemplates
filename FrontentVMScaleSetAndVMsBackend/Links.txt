@@ -1,5 +1,0 @@
-Load balancing rule + extension
-
-https://github.com/Azure/azure-quickstart-templates/blob/master/201-vmss-custom-script-windows/azuredeploy.json
-
-https://docs.microsoft.com/en-us/azure/virtual-machines/windows/extensions-customscript
