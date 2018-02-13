@@ -1,3 +1,8 @@
+# Buuton to deploy to Azure
+<a href="https://azuredeploy.net/?repository=https://github.com/Soruk/AzureRMTemplates/tree/master/FrontentVMScaleSetAndVMsBackend" target="_blank">
+    <img src="http://azuredeploy.net/deploybutton.png"/>
+</a>
+
 # FrontentVMScaleSetAndVMsBackend
 This templates deploys an IaaS enviroment to Azure Public Cloud.
 For given resource group, the templates deployes
