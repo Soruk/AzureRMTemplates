@@ -1,0 +1,894 @@
+{
+  "$schema":
+    "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "defaultValue": "myPlatform",
+      "type": "string",
+      "metadata": {
+        "description":
+          "Type name of the envrionment. It is used to prefix resources."
+      }
+    },
+    "environmentSuffix": {
+      "defaultValue": "0",
+      "type": "string",
+      "metadata": {
+        "description": "Type suffix / index of envrionment."
+      }
+    },
+    "environmentType": {
+      "type": "object",
+      "allowedValues": [
+        {
+          "displayName": "Development",
+          "value": "dev"
+        },
+        {
+          "displayName": "Test",
+          "value": "test"
+        },
+        {
+          "displayName": "Production",
+          "value": "prod"
+        }
+      ],
+      "defaultValue": {
+        "displayName": "Development",
+        "value": "dev"
+      },
+      "metadata": {
+        "description": "Type of environment where this deployment should occur."
+      }
+    },
+    "vmSize": {
+      "defaultValue": "Standard_D2s_v3",
+      "type": "string",
+      "metadata": {
+        "description": "Type size of deployed VM."
+      }
+    },
+    "vmAdminUsername": {
+      "type": "string",
+      "defaultValue": "vmAdmin",
+      "metadata": {
+        "description": "Type VM admin user name."
+      }
+    },
+    "vmAdminPassword": {
+      "type": "securestring",
+      "defaultValue": null,
+      "metadata": {
+        "description": "Type VM admin password."
+      }
+    },
+    "instancesCount": {
+      "defaultValue": 2,
+      "type": "int",
+      "metadata": {
+        "description": "Number of instances in Web VM Scaleset"
+      }
+    },
+    "localGatewayIpAddress": {
+      "defaultValue": "127.0.0.1",
+      "type": "string",
+      "metadata": {
+        "description":
+          "Type public IP of your network on premise to create VPN Site to Site."
+      }
+    }
+  },
+  "variables": {
+    "envrionmentInfix":
+      "[concat(toLower(parameters('environmentSuffix')),'-', toLower(parameters('environmentType').value))]",
+    "envrionmentPrefix":
+      "[concat(toLower(parameters('environmentName')),'-',variables('envrionmentInfix'))]",
+    "srvdbName": "srvdb",
+    "vmName_srvdb":
+      "[concat(variables('srvdbName'), '-', toLower(variables('envrionmentInfix')), '-vm')]",
+    "networkInterfaceName_srvdb":
+      "[concat(variables('srvdbName'), '-', toLower(variables('envrionmentInfix')), '-nic')]",
+    "srvappName": "srvapp",
+    "vmName_srvapp":
+      "[concat(variables('srvappName'), '-', toLower(variables('envrionmentInfix')), '-vm')]",
+    "networkInterfaceName_srvapp":
+      "[concat(variables('srvappName'), '-', toLower(variables('envrionmentInfix')), '-nic')]",
+    "srvWebName": "srvweb",
+    "vmScaleSetName_srvweb":
+      "[concat(variables('srvWebName'), '-', toLower(variables('envrionmentInfix')), '-ss')]",
+    "lbScaleSetName_srvweb":
+      "[concat(variables('srvWebName'), '-', toLower(variables('envrionmentInfix')), '-ss-lb')]",
+    "frontendPortNatStartValue": 7400,
+    "storageAccountBackupName":
+      "[concat(replace(variables('envrionmentPrefix'),'-',''), 'bkpv2')]",
+    "storageAccountDiagnosticsName":
+      "[concat(replace(variables('envrionmentPrefix'),'-',''), 'diagv2')]",
+    "storageAccountGeneralName":
+      "[concat(replace(variables('envrionmentPrefix'),'-',''), 'stdv2')]",
+    "virtualNetworkName": "[concat(variables('envrionmentPrefix'), '-vnet')]",
+    "virtualNetworkGatewayName":
+      "[concat(variables('envrionmentPrefix'), '-vng')]",
+    "localNetworkGatewayName":
+      "[concat(variables('envrionmentPrefix'), '-lng')]",
+    "connectionNameVNet2site":
+      "[concat(variables('envrionmentPrefix'), '-vnet2site')]",
+    "networkSecurityGroupName":
+      "[concat(variables('envrionmentPrefix'), '-nsg')]",
+    "publicIPAddressesVPNName":
+      "[concat(variables('envrionmentPrefix'), '-vpn-pip')]",
+    "publicIPAddressesWebName":
+      "[concat(variables('envrionmentPrefix'), '-web-pip')]",
+    "subnetGateway": "GatewaySubnet",
+    "subnetFrontend": "frontend-subnet",
+    "subnetBackend": "backend-subnet",
+    "virtualNetworkAddressPrefix": "10.16.0.0/16",
+    "subnetGatewayAddressPrefix": "10.16.64.0/24",
+    "subnetFrontendAddressPrefix": "10.16.8.0/24",
+    "subnetBackendAddressPrefix": "10.16.32.0/24",
+    "vpnGatewayAddressPrefix": "172.16.128.0/24",
+    "localGatewayAddressPrefix": "172.32.128.0/24",
+    "psRootCertificateNamename": "P2SRootCertExample",
+    "psRootCertifcatePublicData":"MIIC9TCCAd2gAwIBAgIQKfKt+fwgI5tE1B6jlBY/9TANBgkqhkiG9w0BAQsFADAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwHhcNMTgwMjEzMDcxMzU4WhcNMjgwMjEzMDcyMzU4WjAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAxd7tBvz3ZcI6IJthPDv5lylvrvKHbkrfWtnjqIcHES9VQFnVGLw9OVAmzKgTcC8e8fcolOiNANXZUSjHxOVb5ndlIf3QN9m8UEtcEJf02bXqIExCz3t4pHRJwAWvCyWlDLT4UmlcUzJiUShVAYr2xSEI13Cjl6rIxxWCmTp+dR0BzhcBywYw8nnEWmR2ze2a6AK2pBG6sX+CJfD0pSfHjg/0Z7WwKaYEjija6c8kFYmmuPShUpirll8KxGrrJs+v/rYQXB6VOutVylmsVmp0ex18LPUrPFEtjN0Lmo/DBpvYAmCS2sUzExKgnMSkeId8hVBvG0r9NBTiabqDkC4pAgMBAAGjMTAvMA4GA1UdDwEB/wQEAwICBDAdBgNVHQ4EFgQU1Nby+seD/CQ30uDBeiTu/d8yXlYwDQYJKoZIhvcNAQELBQADggEBACI7F6dsOxEYdMJJu9x5+8caV412n0OiqGV1+zBQsTav7m2XsI0EWZI3kajZKQOSrEBD1qW+78HOi04TJZxt7ErqyPCFjkto1smLVU6B6PcZwowZBszw092cRUgZQg2ERAh60ZJ3R0QNuT0iIEBxV9SU8S3zYg0QYKEV+T6tl5nsfhFLrnf2ck/VN5faokZHgNSrR+8DjKy94rkHKw4+4B1aXKq5d8OrwUvaBP2M0OO/Ts3abEcPKw0lF2jbMa33yeAbA76RgaCKrZnoqqEOztOFdZt35LOBHlKK9uS9ZxeMCnWNSStvyMVplM+CnApXVKq3dt7UKbQGRMl3tB9VAFI="
+  },
+  "outputs": {},
+  "resources": [
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('vmName_srvapp')]",
+      "apiVersion": "2017-03-30",
+      "location": "[resourceGroup().location]",
+      "zones": ["1"],
+      "scale": null,
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2016-Datacenter",
+            "version": "latest"
+          },
+          "osDisk": {
+            "osType": "Windows",
+            "name": "[concat(variables('vmName_srvapp'),'-osDisk')]",
+            "createOption": "FromImage",
+            "caching": "ReadWrite",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+            },
+            "diskSizeGB": 128
+          },
+          "dataDisks": []
+        },
+        "osProfile": {
+          "computerName": "[variables('vmName_srvapp')]",
+          "adminUsername": "[parameters('vmAdminUsername')]",
+          "adminPassword": "[parameters('vmAdminPassword')]",
+          "windowsConfiguration": {
+            "provisionVMAgent": true,
+            "enableAutomaticUpdates": true
+          },
+          "secrets": []
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id":
+                "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName_srvapp'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri":
+              "[concat('https', '://', variables('storageAccountGeneralName'), '.blob.core.windows.net', '/')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName_srvapp'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountGeneralName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('vmName_srvdb')]",
+      "apiVersion": "2017-03-30",
+      "location": "[resourceGroup().location]",
+      "zones": ["1"],
+      "scale": null,
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftSQLServer",
+            "offer": "SQL2016SP1-WS2016",
+            "sku": "Standard",
+            "version": "latest"
+          },
+          "osDisk": {
+            "osType": "Windows",
+            "name": "[concat(variables('vmName_srvdb'),'-osDisk')]",
+            "createOption": "FromImage",
+            "caching": "ReadWrite",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+            },
+            "diskSizeGB": 128
+          },
+          "dataDisks": [
+            {
+              "lun": 0,
+              "name": "[concat(variables('vmName_srvdb'),'-dataDisk')]",
+              "createOption": "Empty",
+              "caching": "ReadOnly",
+              "managedDisk": {
+                "storageAccountType": "Premium_LRS"
+              },
+              "diskSizeGB": 1023
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[variables('vmName_srvdb')]",
+          "adminUsername": "[parameters('vmAdminUsername')]",
+          "adminPassword": "[parameters('vmAdminPassword')]",
+          "windowsConfiguration": {
+            "provisionVMAgent": true,
+            "enableAutomaticUpdates": true
+          },
+          "secrets": []
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id":
+                "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName_srvdb'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri":
+              "[concat('https', '://', variables('storageAccountDiagnosticsName'), '.blob.core.windows.net', '/')]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName_srvdb'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountDiagnosticsName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachineScaleSets",
+      "sku": {
+        "name": "[parameters('vmSize')]",
+        "tier": "Standard",
+        "capacity": "[parameters('instancesCount')]"
+      },
+      "name": "[variables('vmScaleSetName_srvweb')]",
+      "apiVersion": "2017-03-30",
+      "location": "[resourceGroup().location]",
+      "zones": ["1"],
+      "scale": null,
+      "properties": {
+        "singlePlacementGroup": true,
+        "upgradePolicy": {
+          "mode": "Automatic"
+        },
+        "virtualMachineProfile": {
+          "osProfile": {
+            "computerNamePrefix": "[variables('srvWebName')]",
+            "adminUsername": "[parameters('vmAdminUsername')]",
+            "adminPassword": "[parameters('vmAdminPassword')]",
+            "windowsConfiguration": {
+              "provisionVMAgent": true,
+              "enableAutomaticUpdates": true
+            },
+            "secrets": []
+          },
+          "storageProfile": {
+            "osDisk": {
+              "createOption": "FromImage",
+              "caching": "ReadWrite",
+              "managedDisk": {
+                "storageAccountType": "Premium_LRS"
+              }
+            },
+            "imageReference": {
+              "publisher": "MicrosoftWindowsServer",
+              "offer": "WindowsServer",
+              "sku": "2016-Datacenter",
+              "version": "latest"
+            }
+          },
+          "networkProfile": {
+            "networkInterfaceConfigurations": [
+              {
+                "name": "[concat(variables('vmScaleSetName_srvweb'),'-nic')]",
+                "properties": {
+                  "primary": true,
+                  "enableAcceleratedNetworking": false,
+                  "dnsSettings": {
+                    "dnsServers": []
+                  },
+                  "ipConfigurations": [
+                    {
+                      "name":
+                        "[concat(variables('vmScaleSetName_srvweb'),'-ipc')]",
+                      "properties": {
+                        "subnet": {
+                          "id":
+                            "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetFrontend'))]"
+                        },
+                        "privateIPAddressVersion": "IPv4",
+                        "loadBalancerBackendAddressPools": [
+                          {
+                            "id":
+                              "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetName_srvweb')), '/backendAddressPools/bepool')]"
+                          }
+                        ],
+                        "loadBalancerInboundNatPools": []
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "overprovision": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetFrontend'))]",
+        "[resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetName_srvweb'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/connections",
+      "name": "[variables('connectionNameVNet2site')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "virtualNetworkGateway1": {
+          "id":
+            "[resourceId('Microsoft.Network/virtualNetworkGateways', variables('virtualNetworkGatewayName'))]",
+          "location": "[resourceGroup().location]"
+        },
+        "localNetworkGateway2": {
+          "id":
+            "[resourceId('Microsoft.Network/localNetworkGateways', variables('localNetworkGatewayName'))]",
+          "location": "[resourceGroup().location]"
+        },
+        "connectionType": "IPsec",
+        "routingWeight": 0,
+        "enableBgp": false,
+        "usePolicyBasedTrafficSelectors": false,
+        "ipsecPolicies": []
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworkGateways', variables('virtualNetworkGatewayName'))]",
+        "[resourceId('Microsoft.Network/localNetworkGateways', variables('localNetworkGatewayName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/loadBalancers",
+      "name": "[variables('lbScaleSetName_srvweb')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "LoadBalancerFrontEnd",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id":
+                  "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressesWebName'))]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "bepool"
+          }
+        ],
+        "loadBalancingRules": [],
+        "probes": [],
+        "inboundNatRules": [],
+        "outboundNatRules": [],
+        "inboundNatPools": []
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressesWebName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/localNetworkGateways",
+      "name": "[variables('localNetworkGatewayName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "localNetworkAddressSpace": {
+          "addressPrefixes": ["[variables('localGatewayAddressPrefix')]"]
+        },
+        "gatewayIpAddress": "[parameters('localGatewayIpAddress')]"
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('networkInterfaceName_srvapp')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "[concat(variables('vmName_srvapp'),'-ipc')]",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id":
+                  "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]"
+              }
+            }
+          }
+        ],
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "primary": true,
+        "virtualMachine": {
+          "id":
+            "[resourceId('Microsoft.Compute/virtualMachines', variables('vmName_srvapp'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('networkInterfaceName_srvdb')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "[concat(variables('vmName_srvdb'),'-ipc')]",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id":
+                  "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]"
+              }
+            }
+          }
+        ],
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": false,
+        "primary": true,
+        "virtualMachine": {
+          "id":
+            "[resourceId('Microsoft.Compute/virtualMachines', variables('vmName_srvdb'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/loadBalancers/inboundNatRules",
+      "name":
+        "[concat(variables('lbScaleSetName_srvweb'), '/', 'natpool.', copyIndex())]",
+      "apiVersion": "2017-10-01",
+      "scale": null,
+      "properties": {
+        "frontendIPConfiguration": {
+          "id":
+            "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetName_srvweb')), '/frontendIPConfigurations/LoadBalancerFrontEnd')]"
+        },
+        "frontendPort":
+          "[add(variables('frontendPortNatStartValue'), copyIndex())]",
+        "backendPort": 3389,
+        "enableFloatingIP": false,
+        "idleTimeoutInMinutes": 4,
+        "protocol": "Tcp"
+      },
+      "copy": {
+        "name": "natpoolCopy",
+        "count": "[parameters('instancesCount')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetName_srvweb'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('networkSecurityGroupName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "provisioningState": "Succeeded",
+        "defaultSecurityRules": [
+          {
+            "name": "AllowVnetInBound",
+            "properties": {
+              "description": "Allow inbound traffic from all VMs in VNET",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 65000,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowAzureLoadBalancerInBound",
+            "properties": {
+              "description": "Allow inbound traffic from azure load balancer",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "AzureLoadBalancer",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 65001,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "DenyAllInBound",
+            "properties": {
+              "description": "Deny all inbound traffic",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 65500,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowVnetOutBound",
+            "properties": {
+              "description":
+                "Allow outbound traffic from all VMs to all VMs in VNET",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 65000,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowInternetOutBound",
+            "properties": {
+              "description": "Allow outbound traffic from all VMs to Internet",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "Internet",
+              "access": "Allow",
+              "priority": 65001,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "DenyAllOutBound",
+            "properties": {
+              "description": "Deny all outbound traffic",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 65500,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          }
+        ]
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressesWebName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "zones": ["1"],
+      "scale": null,
+      "properties": {
+        "publicIPAddressVersion": "IPv4",
+        "publicIPAllocationMethod": "Dynamic",
+        "idleTimeoutInMinutes": 4,
+        "dnsSettings": {
+          "domainNameLabel":
+            "[replace(variables('publicIPAddressesWebName'),'-','')]",
+          "fqdn":
+            "[concat(replace(variables('publicIPAddressesWebName'),'-',''), resourceGroup().location,'.cloudapp.azure.com')]"
+        }
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressesVPNName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "zones": ["1"],
+      "scale": null,
+      "properties": {
+        "publicIPAddressVersion": "IPv4",
+        "publicIPAllocationMethod": "Dynamic",
+        "idleTimeoutInMinutes": 4,
+        "dnsSettings": {
+          "domainNameLabel":
+            "[replace(variables('publicIPAddressesVPNName'),'-','')]",
+          "fqdn":
+            "[concat(replace(variables('publicIPAddressesVPNName'),'-',''), resourceGroup().location,'.cloudapp.azure.com')]"
+        }
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworkGateways",
+      "name": "[variables('virtualNetworkGatewayName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "default",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id":
+                  "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressesVPNName'))]"
+              },
+              "subnet": {
+                "id":
+                  "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetGateway'))]"
+              }
+            }
+          }
+        ],
+        "sku": {
+          "name": "VpnGw1",
+          "tier": "VpnGw1",
+          "capacity": 2
+        },
+        "gatewayType": "Vpn",
+        "vpnType": "RouteBased",
+        "enableBgp": false,
+        "activeActive": false,
+        "vpnClientConfiguration": {
+          "vpnClientAddressPool": {
+            "addressPrefixes": ["[variables('vpnGatewayAddressPrefix')]"]
+          },
+          "vpnClientProtocols": ["SSTP", "IkeV2"],
+          "vpnClientRootCertificates": [
+            {
+              "name": "[variables('psRootCertificateNamename')]",              
+              "properties": {
+                "publicCertData": "[variables('psRootCertifcatePublicData')]"                  
+              }
+            }
+          ],
+          "vpnClientRevokedCertificates": []
+        }      
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressesVPNName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetGateway'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('virtualNetworkName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": ["[variables('virtualNetworkAddressPrefix')]"]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetFrontend')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetFrontendAddressPrefix')]"
+            }
+          },
+          {
+            "name": "[variables('subnetBackend')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetBackendAddressPrefix')]"
+            }
+          },
+          {
+            "name": "[variables('subnetGateway')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetGatewayAddressPrefix')]"
+            }
+          }
+        ],
+        "virtualNetworkPeerings": []
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "Storage",
+      "name": "[variables('storageAccountBackupName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "tags": {},
+      "scale": null,
+      "properties": {
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "encryption": {
+          "services": {
+            "file": {
+              "enabled": true
+            },
+            "blob": {
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        }
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "Storage",
+      "name": "[variables('storageAccountDiagnosticsName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "tags": {},
+      "scale": null,
+      "properties": {
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "encryption": {
+          "services": {
+            "file": {
+              "enabled": true
+            },
+            "blob": {
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        }
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "Storage",
+      "name": "[variables('storageAccountGeneralName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "tags": {},
+      "scale": null,
+      "properties": {
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "encryption": {
+          "services": {
+            "file": {
+              "enabled": true
+            },
+            "blob": {
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        }
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "name":
+        "[concat(variables('virtualNetworkName'), '/', variables('subnetFrontend'))]",
+      "apiVersion": "2017-06-01",
+      "scale": null,
+      "properties": {
+        "addressPrefix": "[variables('subnetFrontendAddressPrefix')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "name":
+        "[concat(variables('virtualNetworkName'), '/', variables('subnetBackend'))]",
+      "apiVersion": "2017-06-01",
+      "scale": null,
+      "properties": {
+        "addressPrefix": "[variables('subnetBackendAddressPrefix')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "name":
+        "[concat(variables('virtualNetworkName'), '/', variables('subnetGateway'))]",
+      "apiVersion": "2017-06-01",
+      "scale": null,
+      "properties": {
+        "addressPrefix": "[variables('subnetGatewayAddressPrefix')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
+      ]
+    }
+  ]
+}

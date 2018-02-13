@@ -1,0 +1,30 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environmentName": {
+            "value": null
+        },
+        "environmentSuffix": {
+            "value": null
+        },
+        "environmentType": {
+            "value": null
+        },
+        "vmSize": {
+            "value": null
+        },
+        "vmAdminUsername": {
+            "value": null
+        },
+        "vmAdminPassword": {
+            "value": null
+        },
+        "instancesCount":{
+            "value": null
+        },
+        "localGatewayIpAddress":{
+            "value": null
+        }
+    }
+}
