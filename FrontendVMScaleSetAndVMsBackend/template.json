@@ -11,33 +11,17 @@
           "Type name of the envrionment. It is used to prefix resources."
       }
     },
-    "environmentSuffix": {
-      "defaultValue": "0",
-      "type": "string",
+    "environmentNumber": {
+      "defaultValue": 0,
+      "type": "int",
       "metadata": {
-        "description": "Type suffix / index of envrionment."
+        "description": "Type envrionment number."
       }
     },
     "environmentType": {
-      "type": "object",
-      "allowedValues": [
-        {
-          "displayName": "Development",
-          "value": "dev"
-        },
-        {
-          "displayName": "Test",
-          "value": "test"
-        },
-        {
-          "displayName": "Production",
-          "value": "prod"
-        }
-      ],
-      "defaultValue": {
-        "displayName": "Development",
-        "value": "dev"
-      },
+      "type": "string",
+      "allowedValues": ["Dev", "Prod", "Test"],
+      "defaultValue": "dev",
       "metadata": {
         "description": "Type of environment where this deployment should occur."
       }
@@ -81,7 +65,7 @@
   },
   "variables": {
     "envrionmentInfix":
-      "[concat(toLower(parameters('environmentSuffix')),'-', toLower(parameters('environmentType').value))]",
+      "[concat(toLower(parameters('environmentNumber')),'-', toLower(parameters('environmentType')))]",
     "envrionmentPrefix":
       "[concat(toLower(parameters('environmentName')),'-',variables('envrionmentInfix'))]",
     "srvdbName": "srvdb",
