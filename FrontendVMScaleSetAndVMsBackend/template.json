@@ -64,45 +64,49 @@
     }
   },
   "variables": {
-    "envrionmentInfix":
-      "[concat(toLower(parameters('environmentNumber')),'-', toLower(parameters('environmentType')))]",
-    "envrionmentPrefix":
-      "[concat(toLower(parameters('environmentName')),'-',variables('envrionmentInfix'))]",
+    "environmentInfix":
+      "[concat(parameters('environmentNumber'),'-', toLower(parameters('environmentType')))]",
+    "environmentPrefix":
+      "[concat(toLower(parameters('environmentName')),'-',variables('environmentInfix'))]",
     "srvdbName": "srvdb",
     "vmName_srvdb":
-      "[concat(variables('srvdbName'), '-', toLower(variables('envrionmentInfix')), '-vm')]",
+      "[concat(variables('srvdbName'), '-', toLower(variables('environmentInfix')), '-vm')]",
     "networkInterfaceName_srvdb":
-      "[concat(variables('srvdbName'), '-', toLower(variables('envrionmentInfix')), '-nic')]",
+      "[concat(variables('srvdbName'), '-', toLower(variables('environmentInfix')), '-nic')]",
     "srvappName": "srvapp",
     "vmName_srvapp":
-      "[concat(variables('srvappName'), '-', toLower(variables('envrionmentInfix')), '-vm')]",
+      "[concat(variables('srvappName'), '-', toLower(variables('environmentInfix')), '-vm')]",
     "networkInterfaceName_srvapp":
-      "[concat(variables('srvappName'), '-', toLower(variables('envrionmentInfix')), '-nic')]",
+      "[concat(variables('srvappName'), '-', toLower(variables('environmentInfix')), '-nic')]",
     "srvWebName": "srvweb",
     "vmScaleSetName_srvweb":
-      "[concat(variables('srvWebName'), '-', toLower(variables('envrionmentInfix')), '-ss')]",
+      "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss')]",
     "lbScaleSetName_srvweb":
-      "[concat(variables('srvWebName'), '-', toLower(variables('envrionmentInfix')), '-ss-lb')]",
+      "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-lb')]",
+    "lbScaleSetBackendPoolName":
+      "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-lb-bp')]",
+    "lbScaleSetFrontendName":
+      "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-lb-f')]",
     "frontendPortNatStartValue": 7400,
     "storageAccountBackupName":
-      "[concat(replace(variables('envrionmentPrefix'),'-',''), 'bkpv2')]",
+      "[concat(replace(variables('environmentPrefix'),'-',''), 'bkpv2')]",
     "storageAccountDiagnosticsName":
-      "[concat(replace(variables('envrionmentPrefix'),'-',''), 'diagv2')]",
+      "[concat(replace(variables('environmentPrefix'),'-',''), 'diagv2')]",
     "storageAccountGeneralName":
-      "[concat(replace(variables('envrionmentPrefix'),'-',''), 'stdv2')]",
-    "virtualNetworkName": "[concat(variables('envrionmentPrefix'), '-vnet')]",
+      "[concat(replace(variables('environmentPrefix'),'-',''), 'stdv2')]",
+    "virtualNetworkName": "[concat(variables('environmentPrefix'), '-vnet')]",
     "virtualNetworkGatewayName":
-      "[concat(variables('envrionmentPrefix'), '-vng')]",
+      "[concat(variables('environmentPrefix'), '-vng')]",
     "localNetworkGatewayName":
-      "[concat(variables('envrionmentPrefix'), '-lng')]",
+      "[concat(variables('environmentPrefix'), '-lng')]",
     "connectionNameVNet2site":
-      "[concat(variables('envrionmentPrefix'), '-vnet2site')]",
+      "[concat(variables('environmentPrefix'), '-vnet2site')]",
     "networkSecurityGroupName":
-      "[concat(variables('envrionmentPrefix'), '-nsg')]",
+      "[concat(variables('environmentPrefix'), '-nsg')]",
     "publicIPAddressesVPNName":
-      "[concat(variables('envrionmentPrefix'), '-vpn-pip')]",
+      "[concat(variables('environmentPrefix'), '-vpn-pip')]",
     "publicIPAddressesWebName":
-      "[concat(variables('envrionmentPrefix'), '-web-pip')]",
+      "[concat(variables('environmentPrefix'), '-web-pip')]",
     "subnetGateway": "GatewaySubnet",
     "subnetFrontend": "frontend-subnet",
     "subnetBackend": "backend-subnet",
@@ -112,8 +116,9 @@
     "subnetBackendAddressPrefix": "10.16.32.0/24",
     "vpnGatewayAddressPrefix": "172.16.128.0/24",
     "localGatewayAddressPrefix": "172.32.128.0/24",
-    "psRootCertificateNamename": "P2SRootCertExample",
-    "psRootCertifcatePublicData":"MIIC9TCCAd2gAwIBAgIQKfKt+fwgI5tE1B6jlBY/9TANBgkqhkiG9w0BAQsFADAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwHhcNMTgwMjEzMDcxMzU4WhcNMjgwMjEzMDcyMzU4WjAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAxd7tBvz3ZcI6IJthPDv5lylvrvKHbkrfWtnjqIcHES9VQFnVGLw9OVAmzKgTcC8e8fcolOiNANXZUSjHxOVb5ndlIf3QN9m8UEtcEJf02bXqIExCz3t4pHRJwAWvCyWlDLT4UmlcUzJiUShVAYr2xSEI13Cjl6rIxxWCmTp+dR0BzhcBywYw8nnEWmR2ze2a6AK2pBG6sX+CJfD0pSfHjg/0Z7WwKaYEjija6c8kFYmmuPShUpirll8KxGrrJs+v/rYQXB6VOutVylmsVmp0ex18LPUrPFEtjN0Lmo/DBpvYAmCS2sUzExKgnMSkeId8hVBvG0r9NBTiabqDkC4pAgMBAAGjMTAvMA4GA1UdDwEB/wQEAwICBDAdBgNVHQ4EFgQU1Nby+seD/CQ30uDBeiTu/d8yXlYwDQYJKoZIhvcNAQELBQADggEBACI7F6dsOxEYdMJJu9x5+8caV412n0OiqGV1+zBQsTav7m2XsI0EWZI3kajZKQOSrEBD1qW+78HOi04TJZxt7ErqyPCFjkto1smLVU6B6PcZwowZBszw092cRUgZQg2ERAh60ZJ3R0QNuT0iIEBxV9SU8S3zYg0QYKEV+T6tl5nsfhFLrnf2ck/VN5faokZHgNSrR+8DjKy94rkHKw4+4B1aXKq5d8OrwUvaBP2M0OO/Ts3abEcPKw0lF2jbMa33yeAbA76RgaCKrZnoqqEOztOFdZt35LOBHlKK9uS9ZxeMCnWNSStvyMVplM+CnApXVKq3dt7UKbQGRMl3tB9VAFI="
+    "psRootCertificateName": "P2SRootCertExample",
+    "psRootCertifcatePublicData":
+      "MIIC9TCCAd2gAwIBAgIQKfKt+fwgI5tE1B6jlBY/9TANBgkqhkiG9w0BAQsFADAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwHhcNMTgwMjEzMDcxMzU4WhcNMjgwMjEzMDcyMzU4WjAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAxd7tBvz3ZcI6IJthPDv5lylvrvKHbkrfWtnjqIcHES9VQFnVGLw9OVAmzKgTcC8e8fcolOiNANXZUSjHxOVb5ndlIf3QN9m8UEtcEJf02bXqIExCz3t4pHRJwAWvCyWlDLT4UmlcUzJiUShVAYr2xSEI13Cjl6rIxxWCmTp+dR0BzhcBywYw8nnEWmR2ze2a6AK2pBG6sX+CJfD0pSfHjg/0Z7WwKaYEjija6c8kFYmmuPShUpirll8KxGrrJs+v/rYQXB6VOutVylmsVmp0ex18LPUrPFEtjN0Lmo/DBpvYAmCS2sUzExKgnMSkeId8hVBvG0r9NBTiabqDkC4pAgMBAAGjMTAvMA4GA1UdDwEB/wQEAwICBDAdBgNVHQ4EFgQU1Nby+seD/CQ30uDBeiTu/d8yXlYwDQYJKoZIhvcNAQELBQADggEBACI7F6dsOxEYdMJJu9x5+8caV412n0OiqGV1+zBQsTav7m2XsI0EWZI3kajZKQOSrEBD1qW+78HOi04TJZxt7ErqyPCFjkto1smLVU6B6PcZwowZBszw092cRUgZQg2ERAh60ZJ3R0QNuT0iIEBxV9SU8S3zYg0QYKEV+T6tl5nsfhFLrnf2ck/VN5faokZHgNSrR+8DjKy94rkHKw4+4B1aXKq5d8OrwUvaBP2M0OO/Ts3abEcPKw0lF2jbMa33yeAbA76RgaCKrZnoqqEOztOFdZt35LOBHlKK9uS9ZxeMCnWNSStvyMVplM+CnApXVKq3dt7UKbQGRMl3tB9VAFI="
   },
   "outputs": {},
   "resources": [
@@ -316,7 +321,7 @@
                         "loadBalancerBackendAddressPools": [
                           {
                             "id":
-                              "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetName_srvweb')), '/backendAddressPools/bepool')]"
+                              "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetName_srvweb')), '/backendAddressPools/', variables('lbScaleSetBackendPoolName'))]"
                           }
                         ],
                         "loadBalancerInboundNatPools": []
@@ -366,13 +371,13 @@
     {
       "type": "Microsoft.Network/loadBalancers",
       "name": "[variables('lbScaleSetName_srvweb')]",
-      "apiVersion": "2017-06-01",
+      "apiVersion": "2017-04-01",
       "location": "[resourceGroup().location]",
       "scale": null,
       "properties": {
         "frontendIPConfigurations": [
           {
-            "name": "LoadBalancerFrontEnd",
+            "name": "[variables('lbScaleSetFrontendName')]",
             "properties": {
               "privateIPAllocationMethod": "Dynamic",
               "publicIPAddress": {
@@ -384,7 +389,7 @@
         ],
         "backendAddressPools": [
           {
-            "name": "bepool"
+            "name": "[variables('lbScaleSetBackendPoolName')]"
           }
         ],
         "loadBalancingRules": [],
@@ -482,7 +487,7 @@
       "properties": {
         "frontendIPConfiguration": {
           "id":
-            "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetName_srvweb')), '/frontendIPConfigurations/LoadBalancerFrontEnd')]"
+            "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetName_srvweb')), '/frontendIPConfigurations/', variables('lbScaleSetFrontendName'))]"
         },
         "frontendPort":
           "[add(variables('frontendPortNatStartValue'), copyIndex())]",
@@ -688,14 +693,14 @@
           "vpnClientProtocols": ["SSTP", "IkeV2"],
           "vpnClientRootCertificates": [
             {
-              "name": "[variables('psRootCertificateNamename')]",              
+              "name": "[variables('psRootCertificateName')]",
               "properties": {
-                "publicCertData": "[variables('psRootCertifcatePublicData')]"                  
+                "publicCertData": "[variables('psRootCertifcatePublicData')]"
               }
             }
           ],
           "vpnClientRevokedCertificates": []
-        }      
+        }
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressesVPNName'))]",
