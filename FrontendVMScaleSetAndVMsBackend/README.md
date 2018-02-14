@@ -15,5 +15,8 @@ For given resource group, the templates deployes:
 - 1 VM Windows 2016 server for Backend application server
 - 1 VPN gateway with Local Network Gateway (for S2S scenario) and configruation for P2S scenario
 
+Remarks:
+The Azure Availibility Zones must have been enabled on the subscription, where this template would be deployed.
+
 This template is based on Azure Quick Starts Templates
 https://github.com/Azure/azure-quickstart-templates
