@@ -74,8 +74,11 @@
     "lbScaleSetWebName": "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-lb')]",
     "lbScaleSetWebBackendPoolName": "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-lb-bp')]",
     "lbScaleSetWebNatPoolName": "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-lb-np')]",
+    "lbScaleSetWebRuleName": "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-lb-r')]",
     "lbScaleSetWebFrontendName": "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-lb-f')]",
+    "lbScaleSetWebProbeName": "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-lb-p')]",
     "vmScaleSetWebAutoScaleName": "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-asr')]",
+    "lbScaleSetWebProbePort": 443,
     "rdpNatBackendPort": 3389,
     "frontendPortNatStartValue": 7400,
     "frontendPortNatEndValue": "[add(variables('frontendPortNatStartValue'), add(parameters('instancesCount'), 10))]",
@@ -348,9 +351,35 @@
         "backendAddressPools": [{
           "name": "[variables('lbScaleSetWebBackendPoolName')]"
         }],
-        "loadBalancingRules": [],
-        "probes": [],
-        "outboundNatRules": [],
+        "loadBalancingRules": [{
+          "name": "[variables('lbScaleSetWebRuleName')]",
+          "properties": {
+            "frontendIPConfiguration": {
+              "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetWebName')), '/frontendIPConfigurations/', variables('lbScaleSetWebFrontendName'))]"
+            },
+            "backendAddressPool": {
+              "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetWebName')), '/backendAddressPools/', variables('lbScaleSetWebBackendPoolName'))]"
+            },
+            "protocol": "Tcp",
+            "frontendPort": "[variables('lbScaleSetWebProbePort')]",
+            "backendPort": "[variables('lbScaleSetWebProbePort')]",
+            "enableFloatingIP": false,
+            "idleTimeoutInMinutes": 5,
+            "probe": {
+              "id":"[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetWebName')),'/probes/',variables('lbScaleSetWebProbeName'))]"
+            }
+          }
+        }],
+        "probes": [{
+          "properties": {
+            "protocol": "Tcp",
+            "port": "[variables('lbScaleSetWebProbePort')]",
+            "intervalInSeconds": 15,
+            "numberOfProbes": 2
+          },
+          "name": "[variables('lbScaleSetWebProbeName')]"
+        }],
+        "outboundNatRules": [],        
         "inboundNatPools": [{
           "name": "[variables('lbScaleSetWebNatPoolName')]",
           "properties": {
