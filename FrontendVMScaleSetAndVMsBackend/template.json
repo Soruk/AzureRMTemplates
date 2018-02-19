@@ -198,27 +198,6 @@
             }
           ]
         },
-        "extensionProfile": {
-          "extensions": [{
-            "name": "configureScript",
-            "properties": {
-              "publisher": "Microsoft.Compute",
-              "settings": {
-                "fileUris": [
-                  "[concat('https', '://', parameters('resourcesStorageAccountName'), '.blob.core.windows.net', '/', toLower(parameters('environmentType')), '/configure.srvapp.ps1')]"
-                ]
-              },
-              "typeHandlerVersion": "1.9",
-              "autoUpgradeMinorVersion": true,
-              "protectedSettings": {
-                "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File configure.srvapp.ps1 -environmentType ', toLower(parameters('environmentType')), ' -srvDbName ', variables('vmNameDb'), ' -srvAppName ', variables('vmNameApp'), ' -storageAccountName ', parameters('resourcesStorageAccountName'), ' -storageAccountKey ', parameters('resourcesStorageAccountKey'))]",
-                "storageAccountName": "[parameters('resourcesStorageAccountName')]",
-                "storageAccountKey": "[parameters('resourcesStorageAccountKey')]"
-              },
-              "type": "CustomScriptExtension"
-            }
-          }]
-        },  
         "diagnosticsProfile": {
           "bootDiagnostics": {
             "enabled": true,
@@ -231,6 +210,33 @@
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMApp'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountGeneralName'))]"
       ]
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name":
+        "[concat(variables('vmNameApp'), '/', 'configureScript-', variables('vmNameApp'))]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNameApp'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "fileUris": [
+            "[concat('https', '://', parameters('resourcesStorageAccountName'), '.blob.core.windows.net', '/', toLower(parameters('environmentType')), '/configure.srvapp.ps1')]"
+          ]
+        },
+        "typeHandlerVersion": "1.9",
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {
+          "commandToExecute":
+            "[concat('powershell -ExecutionPolicy Unrestricted -File configure.srvapp.ps1 -environmentType ', toLower(parameters('environmentType')), ' -srvDbName ', variables('vmNameDb'), ' -srvAppName ', variables('vmNameApp'), ' -storageAccountName ', parameters('resourcesStorageAccountName'), ' -storageAccountKey ', parameters('resourcesStorageAccountKey'))]",
+          "storageAccountName": "[parameters('resourcesStorageAccountName')]",
+          "storageAccountKey": "[parameters('resourcesStorageAccountKey')]"
+        },
+        "type": "CustomScriptExtension"
+      }
     },
     {
       "type": "Microsoft.Compute/virtualMachines",
@@ -290,28 +296,7 @@
                 "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMDb'))]"
             }
           ]
-        },        
-        "extensionProfile": {
-          "extensions": [{
-            "name": "configureScript",
-            "properties": {
-              "publisher": "Microsoft.Compute",
-              "settings": {
-                "fileUris": [
-                  "[concat('https', '://', parameters('resourcesStorageAccountName'), '.blob.core.windows.net', '/', toLower(parameters('environmentType')), '/configure.srvdb.ps1')]"
-                ]
-              },
-              "typeHandlerVersion": "1.9",
-              "autoUpgradeMinorVersion": true,
-              "protectedSettings": {
-                "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File configure.srvdb.ps1 -environmentType ', toLower(parameters('environmentType')), ' -srvDbName ', variables('vmNameDb'), ' -srvAppName ', variables('vmNameApp'), ' -storageAccountName ', parameters('resourcesStorageAccountName'), ' -storageAccountKey ', parameters('resourcesStorageAccountKey'))]",
-                "storageAccountName": "[parameters('resourcesStorageAccountName')]",
-                "storageAccountKey": "[parameters('resourcesStorageAccountKey')]"
-              },
-              "type": "CustomScriptExtension"
-            }
-          }]
-        }, 
+        },
         "diagnosticsProfile": {
           "bootDiagnostics": {
             "enabled": true,
@@ -324,6 +309,33 @@
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMDb'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountDiagnosticsName'))]"
       ]
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name":
+        "[concat(variables('vmNameDb'), '/', 'configureScript-', variables('vmNameDb'))]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "settings": {
+          "fileUris": [
+            "[concat('https', '://', parameters('resourcesStorageAccountName'), '.blob.core.windows.net', '/', toLower(parameters('environmentType')), '/configure.srvdb.ps1')]"
+          ]
+        },
+        "typeHandlerVersion": "1.9",
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {
+          "commandToExecute":
+            "[concat('powershell -ExecutionPolicy Unrestricted -File configure.srvdb.ps1 -environmentType ', toLower(parameters('environmentType')), ' -srvDbName ', variables('vmNameDb'), ' -srvAppName ', variables('vmNameApp'), ' -storageAccountName ', parameters('resourcesStorageAccountName'), ' -storageAccountKey ', parameters('resourcesStorageAccountKey'))]",
+          "storageAccountName": "[parameters('resourcesStorageAccountName')]",
+          "storageAccountKey": "[parameters('resourcesStorageAccountKey')]"
+        },
+        "type": "CustomScriptExtension"
+      }
     },
     {
       "type": "Microsoft.Compute/virtualMachineScaleSets",
