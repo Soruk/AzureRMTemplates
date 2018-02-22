@@ -12,6 +12,9 @@
     "environmentType": {
       "value": null
     },
+    "availibiltyZone": {
+      "value": null
+    },
     "vmSize": {
       "value": null
     },
