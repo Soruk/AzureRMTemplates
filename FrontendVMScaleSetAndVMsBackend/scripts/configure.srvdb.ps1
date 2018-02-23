@@ -168,7 +168,4 @@ Invoke-Command -Credential $credential -ComputerName $env:COMPUTERNAME -Argument
     Invoke-Expression "$pathPS1 $argumentList"
 
     Write-Host "End configuring the DataBase VM"
-
-    Write-Host "Restarting Computer"
-    Restart-Computer -Force
 }
