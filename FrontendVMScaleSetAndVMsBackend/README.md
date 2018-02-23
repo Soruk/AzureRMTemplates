@@ -6,17 +6,20 @@
     <img src="http://armviz.io/visualizebutton.png"/>
 </a>
 
-This templates deploys an IaaS enviroment to Azure Public Cloud.
+This template deploys an IaaS enviroment to Azure Public Cloud.
 
-For given resource group, the templates deployes:
+For given resource group, the template deployes:
 - 1 VNet with 3 Subnets: Frontend, Backend and Gateway
 - 1 VM ScaleSet with 2 VM Windows 2016 Server for Web Frontend
 - 1 VM Windows 2016 Server with Sql Server 2016 Backend
 - 1 VM Windows 2016 server for Backend application server
-- 1 VPN gateway with Local Network Gateway (for S2S scenario) and configruation for P2S scenario
+- 1 VPN gateway with Local Network Gateway (for S2S scenario) and configruation for P2S scenario.
+
+It uses Custom Script Extension to configure the VMs when deploying.
+Examples of **PowerShell** scripts are given in the _"scripts"_ subfolder.  
+Scripts and installer files are stored in the container of the Azure Blob Storage.
 
 Remarks:
-The Azure Availibility Zones must have been enabled on the subscription, where this template would be deployed.
+The [Azure Availibility Zones](http://aka.ms/azenroll) must be enabled on the subscription, where this template would be deployed.
 
-This template is based on Azure Quick Starts Templates
-https://github.com/Azure/azure-quickstart-templates
+This template is based on [Azure Quick Starts Templates](https://github.com/Azure/azure-quickstart-templates)
