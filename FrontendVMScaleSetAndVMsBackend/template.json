@@ -141,6 +141,15 @@
     "networkSecurityGroupName": "[concat(variables('environmentPrefix'), '-nsg')]",
     "publicIPAddressesVPNName": "[concat(variables('environmentPrefix'), '-vpn-pip')]",
     "publicIPAddressesWebName": "[concat(variables('environmentPrefix'), '-web-pip')]",
+    "recoveryServiceVaultName": "[concat(variables('environmentPrefix'), '-rsv')]",
+    "backupPolicy10DaysName": "[concat(variables('environmentPrefix'), '-10DaysBackupPolicy')]",
+    "backupPolicy10DaysTimes": ["2018-01-01T03:00:00.000Z"],
+    "backupPolicy10DaysTimeZone": "UTC",
+    "backupFabric": "Azure",
+    "v2VmType": "Microsoft.Compute/virtualMachines",
+    "v2VmContainer": "iaasvmcontainer;iaasvmcontainerv2;",
+    "v2Vm": "vm;iaasvmcontainerv2;",
+    "vmsToProtect": ["[variables('vmNameDb')]", "[variables('vmNameApp')]"],
     "subnetGateway": "GatewaySubnet",
     "subnetFrontend": "frontend-subnet",
     "subnetBackend": "backend-subnet",
@@ -229,9 +238,6 @@
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(variables('vmNameApp'), '/', 'configureScript-', variables('vmNameApp'))]",
       "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNameApp'))]"
-      ],
       "properties": {
         "publisher": "Microsoft.Compute",
         "settings": {
@@ -247,7 +253,10 @@
           "storageAccountKey": "[parameters('resourcesStorageAccountKey')]"
         },
         "type": "CustomScriptExtension"
-      }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameApp'))]"
+      ]
     },
     {
       "type": "Microsoft.Compute/virtualMachines",
@@ -1038,6 +1047,69 @@
         }
       },
       "dependsOn": []
+    },
+    {
+      "type": "Microsoft.RecoveryServices/vaults",
+      "sku": {
+        "name": "RS0",
+        "tier": "Standard"
+      },
+      "name": "[variables('recoveryServiceVaultName')]",
+      "apiVersion": "2016-06-01",
+      "location": "[resourceGroup().location]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.RecoveryServices/vaults/backupPolicies",
+      "name": "[concat(variables('recoveryServiceVaultName'), '/', variables('backupPolicy10DaysName'))]",
+      "apiVersion": "2016-06-01",
+      "properties": {
+        "backupManagementType": "AzureIaasVM",
+        "schedulePolicy": {
+          "scheduleRunFrequency": "Daily",
+          "scheduleRunDays": null,
+          "scheduleRunTimes": "[variables('backupPolicy10DaysTimes')]",
+          "schedulePolicyType": "SimpleSchedulePolicy"
+        },
+        "retentionPolicy": {
+          "dailySchedule": {
+            "retentionTimes": "[variables('backupPolicy10DaysTimes')]",
+            "retentionDuration": {
+              "count": 10,
+              "durationType": "Days"
+            }
+          },
+          "weeklySchedule": null,
+          "monthlySchedule": null,
+          "yearlySchedule": null,
+          "retentionPolicyType": "LongTermRetentionPolicy"
+        },
+        "timeZone": "[variables('backupPolicy10DaysTimeZone')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.RecoveryServices/vaults', variables('recoveryServiceVaultName'))]"
+      ]
+    }, 
+    {
+      "type": "Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems",
+      "name": "[concat(variables('recoveryServiceVaultName'), '/', variables('backupFabric'), '/', variables('v2VmContainer'), concat(resourceGroup().name,';',variables('vmsToProtect')[copyIndex()]), '/', variables('v2Vm'), concat(resourceGroup().name,';',variables('vmsToProtect')[copyIndex()]))]",
+      "apiVersion": "2016-06-01",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "protectedItemsCopy",
+        "count": "[length(variables('vmsToProtect'))]"
+      },
+      "properties": {
+        "protectedItemType": "[variables('v2VmType')]",
+        "policyId": "[resourceId('Microsoft.RecoveryServices/vaults/backupPolicies',variables('recoveryServiceVaultName'),variables('backupPolicy10DaysName'))]",
+        "sourceResourceId": "[resourceId(subscription().subscriptionId,resourceGroup().name,'Microsoft.Compute/virtualMachines',variables('vmsToProtect')[copyIndex()])]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.RecoveryServices/vaults', variables('recoveryServiceVaultName'))]",
+        "[resourceId('Microsoft.RecoveryServices/vaults/backupPolicies',variables('recoveryServiceVaultName'),variables('backupPolicy10DaysName'))]",
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameApp'))]",
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]"
+      ]
     },
     {
       "type": "Microsoft.Network/virtualNetworks/subnets",
