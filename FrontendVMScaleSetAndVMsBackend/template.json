@@ -218,10 +218,7 @@
         "networkProfile": {
           "networkInterfaces": [{
             "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMApp'))]"
-          }],
-          "networkSecurityGroup": {
-            "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
-          }
+          }]
         },
         "diagnosticsProfile": {
           "bootDiagnostics": {
@@ -238,8 +235,7 @@
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMApp'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountGeneralName'))]",
-        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]",
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]"
       ]
     },
     {
@@ -324,10 +320,7 @@
         "networkProfile": {
           "networkInterfaces": [{
             "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMDb'))]"
-          }],
-          "networkSecurityGroup": {
-            "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
-          }
+          }]
         },
         "diagnosticsProfile": {
           "bootDiagnostics": {
@@ -343,8 +336,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMDb'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountDiagnosticsName'))]",
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountDiagnosticsName'))]"
       ]
     },
     {
@@ -690,6 +682,9 @@
         "primary": true,
         "virtualMachine": {
           "id": "[resourceId('Microsoft.Compute/virtualMachines', variables('vmNameApp'))]"
+        },
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
         }
       },
       "tags": {
@@ -698,7 +693,8 @@
         "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
       ]
     },
     {
@@ -722,6 +718,9 @@
         "primary": true,
         "virtualMachine": {
           "id": "[resourceId('Microsoft.Compute/virtualMachines', variables('vmNameDb'))]"
+        },
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
         }
       },
       "tags": {
@@ -730,7 +729,8 @@
         "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
       ]
     },
     {
