@@ -988,6 +988,7 @@
       "name": "[variables('publicIPAddressesVPNName')]",
       "apiVersion": "2017-06-01",
       "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployVirtualNetworkGateway'))]",
       "zones": ["[parameters('availibiltyZone')]"],
       "scale": null,
       "properties": {
