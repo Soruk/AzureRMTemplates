@@ -127,7 +127,7 @@
     "vmScaleSetWebAutoScaleName": "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-asr')]",
     "lbScaleSetWebProbePortHttp": 80,
     "lbScaleSetWebProbePortHttps": 443,
-    "lbScaleSetWebProbePortCollecticSrv": 7405,
+    "lbScaleSetWebProbePortImportP2P": 7405,
     "rdpNatBackendPort": 3389,
     "frontendPortNatStartValue": 3400,
     "frontendPortNatEndValue": "[add(variables('frontendPortNatStartValue'), add(parameters('instancesCount'), 10))]",
@@ -227,6 +227,11 @@
           }
         }
       },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
+      },
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMApp'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountGeneralName'))]",
@@ -253,6 +258,11 @@
           "storageAccountKey": "[parameters('resourcesStorageAccountKey')]"
         },
         "type": "CustomScriptExtension"
+      },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameApp'))]"
@@ -319,6 +329,11 @@
           }
         }
       },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
+      },
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMDb'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountDiagnosticsName'))]"
@@ -347,6 +362,11 @@
           "storageAccountKey": "[parameters('resourcesStorageAccountKey')]"
         },
         "type": "CustomScriptExtension"
+      },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
       }
     },
     {
@@ -446,6 +466,11 @@
         },
         "overprovision": true
       },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
+      },
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetFrontend'))]",
         "[resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetWebName'))]",
@@ -474,6 +499,11 @@
         "enableBgp": false,
         "usePolicyBasedTrafficSelectors": false,
         "ipsecPolicies": []
+      },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworkGateways', variables('virtualNetworkGatewayName'))]",
@@ -529,8 +559,8 @@
                 "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetWebName')), '/backendAddressPools/', variables('lbScaleSetWebBackendPoolName'))]"
               },
               "protocol": "Tcp",
-              "frontendPort": "[variables('lbScaleSetWebProbePortCollecticSrv')]",
-              "backendPort": "[variables('lbScaleSetWebProbePortCollecticSrv')]",
+              "frontendPort": "[variables('lbScaleSetWebProbePortImportP2P')]",
+              "backendPort": "[variables('lbScaleSetWebProbePortImportP2P')]",
               "enableFloatingIP": false,
               "idleTimeoutInMinutes": 5,
               "loadDistribution": "SourceIPProtocol",
@@ -572,7 +602,7 @@
           {
             "properties": {
               "protocol": "Tcp",
-              "port": "[variables('lbScaleSetWebProbePortCollecticSrv')]",
+              "port": "[variables('lbScaleSetWebProbePortImportP2P')]",
               "intervalInSeconds": 15,
               "numberOfProbes": 2
             },
@@ -602,6 +632,11 @@
           }
         }]
       },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
+      },
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressesWebName'))]"
       ]
@@ -618,6 +653,11 @@
           "addressPrefixes": ["[variables('localGatewayAddressPrefix')]"]
         },
         "gatewayIpAddress": "[parameters('localGatewayIpAddress')]"
+      },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -643,6 +683,11 @@
         "virtualMachine": {
           "id": "[resourceId('Microsoft.Compute/virtualMachines', variables('vmNameApp'))]"
         }
+      },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]"
@@ -670,6 +715,11 @@
         "virtualMachine": {
           "id": "[resourceId('Microsoft.Compute/virtualMachines', variables('vmNameDb'))]"
         }
+      },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]"
@@ -716,12 +766,12 @@
             }
           },
           {
-            "name": "AllowAccessCollecthicServer",
+            "name": "AllowAccessImportP2P",
             "properties": {
-              "description": "Allow inbound Collecthic traffic",
+              "description": "Allow inbound Import P2P traffic",
               "protocol": "*",
               "sourcePortRange": "*",
-              "destinationPortRange": "[variables('lbScaleSetWebProbePortCollecticSrv')]",
+              "destinationPortRange": "[variables('lbScaleSetWebProbePortImportP2P')]",
               "destinationAddressPrefix": "VirtualNetwork",
               "access": "Allow",
               "priority": 300,
@@ -830,7 +880,85 @@
           }
         ]
       },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
+      },
       "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "name": "[concat(variables('networkSecurityGroupName'), '/','AllowAccessHTTP')]",
+      "apiVersion": "2017-10-01",
+      "scale": null,
+      "properties": {
+        "provisioningState": "Succeeded",
+        "protocol": "*",
+        "sourcePortRange": "*",
+        "destinationPortRange": "[variables('lbScaleSetWebProbePortHttp')]",
+        "sourceAddressPrefix": "Internet",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 200,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes": [],
+        "destinationAddressPrefixes": []
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "name": "[concat(variables('networkSecurityGroupName'), '/','AllowAccessHTTPS')]",
+      "apiVersion": "2017-10-01",
+      "scale": null,
+      "properties": {
+        "provisioningState": "Succeeded",
+        "protocol": "*",
+        "sourcePortRange": "*",
+        "destinationPortRange": "[variables('lbScaleSetWebProbePortHttps')]",
+        "sourceAddressPrefix": "Internet",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 210,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes": [],
+        "destinationAddressPrefixes": []
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "name": "[concat(variables('networkSecurityGroupName'), '/','AllowAccessImportP2P')]",
+      "apiVersion": "2017-10-01",
+      "scale": null,
+      "properties": {
+        "provisioningState": "Succeeded",
+        "protocol": "*",
+        "sourcePortRange": "*",
+        "destinationPortRange": "[variables('lbScaleSetWebProbePortImportP2P')]",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": 300,
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes": [
+          "[parameters('localGatewayIpAddress')]"
+        ],
+        "destinationAddressPrefixes": []
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+      ]
     },
     {
       "type": "Microsoft.Network/publicIPAddresses",
@@ -847,6 +975,11 @@
           "domainNameLabel": "[replace(variables('publicIPAddressesWebName'),'-','')]",
           "fqdn": "[concat(replace(variables('publicIPAddressesWebName'),'-',''), resourceGroup().location,'.cloudapp.azure.com')]"
         }
+      },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -865,6 +998,11 @@
           "domainNameLabel": "[replace(variables('publicIPAddressesVPNName'),'-','')]",
           "fqdn": "[concat(replace(variables('publicIPAddressesVPNName'),'-',''), resourceGroup().location,'.cloudapp.azure.com')]"
         }
+      },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -911,6 +1049,11 @@
           "vpnClientRevokedCertificates": []
         }
       },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
+      },
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressesVPNName'))]",
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetGateway'))]"
@@ -947,6 +1090,11 @@
         ],
         "virtualNetworkPeerings": []
       },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
+      },
       "dependsOn": []
     },
     {
@@ -959,7 +1107,6 @@
       "name": "[variables('storageAccountBackupName')]",
       "apiVersion": "2017-06-01",
       "location": "[resourceGroup().location]",
-      "tags": {},
       "scale": null,
       "properties": {
         "networkAcls": {
@@ -979,6 +1126,11 @@
           },
           "keySource": "Microsoft.Storage"
         }
+      },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -992,7 +1144,6 @@
       "name": "[variables('storageAccountDiagnosticsName')]",
       "apiVersion": "2017-06-01",
       "location": "[resourceGroup().location]",
-      "tags": {},
       "scale": null,
       "properties": {
         "networkAcls": {
@@ -1012,6 +1163,11 @@
           },
           "keySource": "Microsoft.Storage"
         }
+      },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -1025,7 +1181,6 @@
       "name": "[variables('storageAccountGeneralName')]",
       "apiVersion": "2017-06-01",
       "location": "[resourceGroup().location]",
-      "tags": {},
       "scale": null,
       "properties": {
         "networkAcls": {
@@ -1046,6 +1201,11 @@
           "keySource": "Microsoft.Storage"
         }
       },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
+      },
       "dependsOn": []
     },
     {
@@ -1057,7 +1217,12 @@
       "name": "[variables('recoveryServiceVaultName')]",
       "apiVersion": "2016-06-01",
       "location": "[resourceGroup().location]",
-      "properties": {}
+      "properties": {},
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
+      }
     },
     {
       "type": "Microsoft.RecoveryServices/vaults/backupPolicies",
@@ -1086,6 +1251,11 @@
         },
         "timeZone": "[variables('backupPolicy10DaysTimeZone')]"
       },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
+      },
       "dependsOn": [
         "[resourceId('Microsoft.RecoveryServices/vaults', variables('recoveryServiceVaultName'))]"
       ]
@@ -1103,6 +1273,11 @@
         "protectedItemType": "[variables('v2VmType')]",
         "policyId": "[resourceId('Microsoft.RecoveryServices/vaults/backupPolicies',variables('recoveryServiceVaultName'),variables('backupPolicy10DaysName'))]",
         "sourceResourceId": "[resourceId(subscription().subscriptionId,resourceGroup().name,'Microsoft.Compute/virtualMachines',variables('vmsToProtect')[copyIndex()])]"
+      },
+      "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.RecoveryServices/vaults', variables('recoveryServiceVaultName'))]",
@@ -1152,9 +1327,6 @@
       "apiVersion": "2015-04-01",
       "name": "[variables('vmScaleSetWebAutoScaleName')]",
       "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('vmScaleSetWebName'))]"
-      ],
       "properties": {
         "name": "[variables('vmScaleSetWebAutoScaleName')]",
         "targetResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', variables('vmScaleSetWebName'))]",
@@ -1206,7 +1378,15 @@
             }
           ]
         }]
-      }
+      },
+       "tags": {
+        "PlatformName":"[parameters('environmentName')]",
+        "PlatformType":"[parameters('environmentType')]",
+        "PlatformNumber":"[parameters('environmentNumber')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('vmScaleSetWebName'))]"
+      ]
     }
   ]
 }
