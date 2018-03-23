@@ -138,7 +138,8 @@
     "virtualNetworkGatewayName": "[concat(variables('environmentPrefix'), '-vng')]",
     "localNetworkGatewayName": "[concat(variables('environmentPrefix'), '-lng')]",
     "connectionNameVNet2site": "[concat(variables('environmentPrefix'), '-vnet2site')]",
-    "networkSecurityGroupName": "[concat(variables('environmentPrefix'), '-nsg')]",
+    "networkSecurityGroupNameFrontend": "[concat(variables('environmentPrefix'), '-frontend-nsg')]",
+    "networkSecurityGroupNameBackend": "[concat(variables('environmentPrefix'), '-backend-nsg')]",
     "publicIPAddressesVPNName": "[concat(variables('environmentPrefix'), '-vpn-pip')]",
     "publicIPAddressesWebName": "[concat(variables('environmentPrefix'), '-web-pip')]",
     "recoveryServiceVaultName": "[concat(variables('environmentPrefix'), '-rsv')]",
@@ -156,12 +157,16 @@
     "vpnGatewayType": "RouteBased",
     "vpnGatewaySku": "VpnGw1",
     "vpnGatewayClientProtocols": ["SSTP", "IkeV2"],
-    "virtualNetworkAddressPrefix": "10.16.0.0/16",
-    "subnetGatewayAddressPrefix": "10.16.64.0/24",
-    "subnetFrontendAddressPrefix": "10.16.8.0/24",
-    "subnetBackendAddressPrefix": "10.16.32.0/24",
-    "vpnGatewayAddressPrefix": "172.16.128.0/24",
-    "localGatewayAddressPrefix": "172.32.128.0/24",
+    "virtualNetworkAddressBaseInfixDev": "[if(equals(toLower(parameters('environmentType')),'dev'),0,0)]",
+    "virtualNetworkAddressBaseInfixTest": "[if(equals(toLower(parameters('environmentType')),'test'),100,0)]",
+    "virtualNetworkAddressBaseInfixProd": "[if(equals(toLower(parameters('environmentType')),'prod'),200,0)]",
+    "virtualNetworkAddressBaseInfix": "[add(variables('virtualNetworkAddressBaseInfixDev'), add(variables('virtualNetworkAddressBaseInfixTest'),add(variables('virtualNetworkAddressBaseInfixProd'),parameters('environmentNumber'))))]",
+    "virtualNetworkAddressPrefix": "[concat('10.',variables('virtualNetworkAddressBaseInfix'),'.0.0/16')]",
+    "subnetGatewayAddressPrefix": "[concat('10.',variables('virtualNetworkAddressBaseInfix'),'.128.0/24')]",
+    "subnetFrontendAddressPrefix": "[concat('10.',variables('virtualNetworkAddressBaseInfix'),'.8.0/24')]",
+    "subnetBackendAddressPrefix": "[concat('10.',variables('virtualNetworkAddressBaseInfix'),'.32.0/24')]",
+    "vpnGatewayAddressPrefix": "[concat('172.',variables('virtualNetworkAddressBaseInfix'),'.128.0/24')]",
+    "localGatewayAddressPrefix": "[concat('172.',variables('virtualNetworkAddressBaseInfix'),'.192.0/24')]",
     "psRootCertificateName": "P2SRootCertExample",
     "psRootCertifcatePublicData": "MIIC9TCCAd2gAwIBAgIQKfKt+fwgI5tE1B6jlBY/9TANBgkqhkiG9w0BAQsFADAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwHhcNMTgwMjEzMDcxMzU4WhcNMjgwMjEzMDcyMzU4WjAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAxd7tBvz3ZcI6IJthPDv5lylvrvKHbkrfWtnjqIcHES9VQFnVGLw9OVAmzKgTcC8e8fcolOiNANXZUSjHxOVb5ndlIf3QN9m8UEtcEJf02bXqIExCz3t4pHRJwAWvCyWlDLT4UmlcUzJiUShVAYr2xSEI13Cjl6rIxxWCmTp+dR0BzhcBywYw8nnEWmR2ze2a6AK2pBG6sX+CJfD0pSfHjg/0Z7WwKaYEjija6c8kFYmmuPShUpirll8KxGrrJs+v/rYQXB6VOutVylmsVmp0ex18LPUrPFEtjN0Lmo/DBpvYAmCS2sUzExKgnMSkeId8hVBvG0r9NBTiabqDkC4pAgMBAAGjMTAvMA4GA1UdDwEB/wQEAwICBDAdBgNVHQ4EFgQU1Nby+seD/CQ30uDBeiTu/d8yXlYwDQYJKoZIhvcNAQELBQADggEBACI7F6dsOxEYdMJJu9x5+8caV412n0OiqGV1+zBQsTav7m2XsI0EWZI3kajZKQOSrEBD1qW+78HOi04TJZxt7ErqyPCFjkto1smLVU6B6PcZwowZBszw092cRUgZQg2ERAh60ZJ3R0QNuT0iIEBxV9SU8S3zYg0QYKEV+T6tl5nsfhFLrnf2ck/VN5faokZHgNSrR+8DjKy94rkHKw4+4B1aXKq5d8OrwUvaBP2M0OO/Ts3abEcPKw0lF2jbMa33yeAbA76RgaCKrZnoqqEOztOFdZt35LOBHlKK9uS9ZxeMCnWNSStvyMVplM+CnApXVKq3dt7UKbQGRMl3tB9VAFI="
   },
@@ -228,9 +233,9 @@
         }
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMApp'))]",
@@ -260,9 +265,9 @@
         "type": "CustomScriptExtension"
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameApp'))]"
@@ -330,9 +335,9 @@
         }
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMDb'))]",
@@ -364,9 +369,9 @@
         "type": "CustomScriptExtension"
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       }
     },
     {
@@ -437,7 +442,7 @@
                   }
                 }],
                 "networkSecurityGroup": {
-                  "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                  "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameFrontend'))]"
                 }
               }
             }]
@@ -467,15 +472,15 @@
         "overprovision": true
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetFrontend'))]",
         "[resourceId('Microsoft.Network/loadBalancers', variables('lbScaleSetWebName'))]",
         "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]",
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameFrontend'))]"
       ]
     },
     {
@@ -501,9 +506,9 @@
         "ipsecPolicies": []
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworkGateways', variables('virtualNetworkGatewayName'))]",
@@ -633,9 +638,9 @@
         }]
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressesWebName'))]"
@@ -655,9 +660,9 @@
         "gatewayIpAddress": "[parameters('localGatewayIpAddress')]"
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -684,17 +689,17 @@
           "id": "[resourceId('Microsoft.Compute/virtualMachines', variables('vmNameApp'))]"
         },
         "networkSecurityGroup": {
-          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameBackend'))]"
         }
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]",
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameBackend'))]"
       ]
     },
     {
@@ -720,22 +725,22 @@
           "id": "[resourceId('Microsoft.Compute/virtualMachines', variables('vmNameDb'))]"
         },
         "networkSecurityGroup": {
-          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameBackend'))]"
         }
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetBackend'))]",
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameBackend'))]"
       ]
     },
     {
       "type": "Microsoft.Network/networkSecurityGroups",
-      "name": "[variables('networkSecurityGroupName')]",
+      "name": "[variables('networkSecurityGroupNameFrontend')]",
       "apiVersion": "2017-06-01",
       "location": "[resourceGroup().location]",
       "scale": null,
@@ -889,15 +894,129 @@
         ]
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('networkSecurityGroupNameBackend')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "scale": null,
+      "properties": {
+        "provisioningState": "Succeeded",
+        "defaultSecurityRules": [            
+          {
+            "name": "AllowVnetInBound",
+            "properties": {
+              "description": "Allow inbound traffic from all VMs in VNET",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 65000,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowAzureLoadBalancerInBound",
+            "properties": {
+              "description": "Allow inbound traffic from azure load balancer",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "AzureLoadBalancer",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 65001,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "DenyAllInBound",
+            "properties": {
+              "description": "Deny all inbound traffic",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 65500,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowVnetOutBound",
+            "properties": {
+              "description": "Allow outbound traffic from all VMs to all VMs in VNET",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 65000,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowInternetOutBound",
+            "properties": {
+              "description": "Allow outbound traffic from all VMs to Internet",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "Internet",
+              "access": "Allow",
+              "priority": 65001,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "DenyAllOutBound",
+            "properties": {
+              "description": "Deny all outbound traffic",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 65500,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          }
+        ]
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
     {
       "type": "Microsoft.Network/networkSecurityGroups/securityRules",
-      "name": "[concat(variables('networkSecurityGroupName'), '/','AllowAccessHTTP')]",
+      "name": "[concat(variables('networkSecurityGroupNameFrontend'), '/','AllowAccessHTTP')]",
       "apiVersion": "2017-10-01",
       "scale": null,
       "properties": {
@@ -916,12 +1035,12 @@
         "destinationAddressPrefixes": []
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameFrontend'))]"
       ]
     },
     {
       "type": "Microsoft.Network/networkSecurityGroups/securityRules",
-      "name": "[concat(variables('networkSecurityGroupName'), '/','AllowAccessHTTPS')]",
+      "name": "[concat(variables('networkSecurityGroupNameFrontend'), '/','AllowAccessHTTPS')]",
       "apiVersion": "2017-10-01",
       "scale": null,
       "properties": {
@@ -940,12 +1059,12 @@
         "destinationAddressPrefixes": []
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameFrontend'))]"
       ]
     },
     {
       "type": "Microsoft.Network/networkSecurityGroups/securityRules",
-      "name": "[concat(variables('networkSecurityGroupName'), '/','AllowAccessImportP2P')]",
+      "name": "[concat(variables('networkSecurityGroupNameFrontend'), '/','AllowAccessImportP2P')]",
       "apiVersion": "2017-10-01",
       "scale": null,
       "properties": {
@@ -965,7 +1084,7 @@
         "destinationAddressPrefixes": []
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameFrontend'))]"
       ]
     },
     {
@@ -985,9 +1104,9 @@
         }
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -1009,9 +1128,9 @@
         }
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -1059,9 +1178,9 @@
         }
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressesVPNName'))]",
@@ -1100,9 +1219,9 @@
         "virtualNetworkPeerings": []
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -1137,9 +1256,9 @@
         }
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -1174,9 +1293,9 @@
         }
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -1211,9 +1330,9 @@
         }
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": []
     },
@@ -1228,9 +1347,9 @@
       "location": "[resourceGroup().location]",
       "properties": {},
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       }
     },
     {
@@ -1261,9 +1380,9 @@
         "timeZone": "[variables('backupPolicy10DaysTimeZone')]"
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.RecoveryServices/vaults', variables('recoveryServiceVaultName'))]"
@@ -1284,9 +1403,9 @@
         "sourceResourceId": "[resourceId(subscription().subscriptionId,resourceGroup().name,'Microsoft.Compute/virtualMachines',variables('vmsToProtect')[copyIndex()])]"
       },
       "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[resourceId('Microsoft.RecoveryServices/vaults', variables('recoveryServiceVaultName'))]",
@@ -1301,10 +1420,14 @@
       "apiVersion": "2017-06-01",
       "scale": null,
       "properties": {
-        "addressPrefix": "[variables('subnetFrontendAddressPrefix')]"
+        "addressPrefix": "[variables('subnetFrontendAddressPrefix')]",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameFrontend'))]"
+        }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameFrontend'))]"
       ]
     },
     {
@@ -1313,10 +1436,14 @@
       "apiVersion": "2017-06-01",
       "scale": null,
       "properties": {
-        "addressPrefix": "[variables('subnetBackendAddressPrefix')]"
+        "addressPrefix": "[variables('subnetBackendAddressPrefix')]",     
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameBackend'))]"
+        }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameBackend'))]"
       ]
     },
     {
@@ -1389,9 +1516,9 @@
         }]
       },
        "tags": {
-        "PlatformName":"[parameters('environmentName')]",
-        "PlatformType":"[parameters('environmentType')]",
-        "PlatformNumber":"[parameters('environmentNumber')]"
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('vmScaleSetWebName'))]"
