@@ -29,7 +29,7 @@
       "allowedValues": [0, 1, 2, 3],
       "defaultValue": 1,
       "metadata": {
-        "description": "The availibilit zone: '0' for none."
+        "description": "The availibility zone: '0' for none."
       }
     },
     "vmSizeWeb": {

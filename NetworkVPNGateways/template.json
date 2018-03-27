@@ -1,0 +1,678 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "defaultValue": "myPlatform",
+      "type": "string",
+      "metadata": {
+        "description": "Type name of the environment. It is used to prefix resources."
+      }
+    },    
+    "environmentType": {
+      "type": "string",
+      "allowedValues": ["Dev", "Prod", "Test"],
+      "defaultValue": "Dev",
+      "metadata": {
+        "description": "Type of environment where this deployment should occur."
+      }
+    },
+    "availibiltyZone": {
+      "type": "int",
+      "allowedValues": [0, 1, 2, 3],
+      "defaultValue": 1,
+      "metadata": {
+        "description": "The availibility zone: '0' for none."
+      }
+    },     
+    "deployRouteBasedVirtualNetworkGateway": {
+      "defaultValue": true,
+      "type": "bool",
+      "metadata": {
+        "description": "Indicates whether to deploy route based Virtual Network Gateway."
+      }
+    },
+    "deployPolicyBasedVirtualNetworkGateway": {
+      "defaultValue": true,
+      "type": "bool",
+      "metadata": {
+        "description": "Indicates whether to deploy policy based Virtual Network Gateway."
+      }
+    },
+    "localGatewayIpAddress": {
+      "defaultValue": "127.0.0.1",
+      "type": "string",
+      "metadata": {
+        "description": "Type public IP of your network on premise to create VPN Site to Site."
+      }
+    }   
+  },
+  "variables": {
+    "environmentFunction": "net",
+    "environmentInfix": "[concat(variables('environmentFunction'),'-', toLower(parameters('environmentType')))]",
+    "environmentPrefix": "[concat(toLower(parameters('environmentName')),'-',variables('environmentInfix'))]",     
+    "routeBasedVirtualNetworkName": "[concat(variables('environmentPrefix'), '-rb-vnet')]",
+    "routeBasedVirtualNetworkGatewayName": "[concat(variables('environmentPrefix'), '-rb-vng')]",
+    "routeBasedConnectionNameVNet2site": "[concat(variables('environmentPrefix'), '-rb-vnet2site')]",
+    "routeBasedNetworkSecurityGroupName": "[concat(variables('environmentPrefix'), '-rb-nsg')]",   
+    "routeBasedPublicIPAddressesVPNName": "[concat(variables('environmentPrefix'), '-rb-vpn-pip')]",
+    "policyBasedVirtualNetworkName": "[concat(variables('environmentPrefix'), '-pb-vnet')]",
+    "policyBasedVirtualNetworkGatewayName": "[concat(variables('environmentPrefix'), '-pb-vng')]",
+    "policyBasedConnectionNameVNet2site": "[concat(variables('environmentPrefix'), '-pb-vnet2site')]",
+    "policyBasedNetworkSecurityGroupName": "[concat(variables('environmentPrefix'), '-pb-nsg')]",   
+    "policyBasedPublicIPAddressesVPNName": "[concat(variables('environmentPrefix'), '-pb-vpn-pip')]",  
+    "localNetworkGatewayName": "[concat(variables('environmentPrefix'), '-lng')]",   
+    "subnetGateway": "GatewaySubnet",
+    "subnetDefault": "default-subnet",
+    "routeBasedVpnGatewayType": "RouteBased",
+    "routeBasedVpnGatewaySku": "VpnGw1",
+    "routeBasedVpnGatewayClientProtocols": ["SSTP", "IkeV2"],
+    "policyBasedVpnGatewayType": "PolicyBased",
+    "policyBasedVpnGatewaySku": "Basic",
+    "policyBasedVpnGatewayClientProtocols": ["SSTP"],
+    "routeBasedVirtualNetworkAddressPrefix": "10.255.0.0/16",
+    "routeBasedSubnetGatewayAddressPrefix": "10.255.255.0/24",
+    "routeBasedSubnetDefaultAddressPrefix": "10.255.0.0/24",
+    "routeBasedVpnGatewayAddressPrefix": "172.255.255.0/24",
+    "policyBasedVirtualNetworkAddressPrefix": "10.254.0.0/16",
+    "policyBasedSubnetGatewayAddressPrefix": "10.254.255.0/24",
+    "policyBasedSubnetDefaultAddressPrefix": "10.254.0.0/24",
+    "policyBasedVpnGatewayAddressPrefix": "172.254.255.0/24",    
+    "localGatewayAddressPrefix": "172.0.0.0/24",
+    "psRootCertificateName": "P2SRootCertExample",
+    "psRootCertifcatePublicData": "MIIC9TCCAd2gAwIBAgIQKfKt+fwgI5tE1B6jlBY/9TANBgkqhkiG9w0BAQsFADAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwHhcNMTgwMjEzMDcxMzU4WhcNMjgwMjEzMDcyMzU4WjAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAxd7tBvz3ZcI6IJthPDv5lylvrvKHbkrfWtnjqIcHES9VQFnVGLw9OVAmzKgTcC8e8fcolOiNANXZUSjHxOVb5ndlIf3QN9m8UEtcEJf02bXqIExCz3t4pHRJwAWvCyWlDLT4UmlcUzJiUShVAYr2xSEI13Cjl6rIxxWCmTp+dR0BzhcBywYw8nnEWmR2ze2a6AK2pBG6sX+CJfD0pSfHjg/0Z7WwKaYEjija6c8kFYmmuPShUpirll8KxGrrJs+v/rYQXB6VOutVylmsVmp0ex18LPUrPFEtjN0Lmo/DBpvYAmCS2sUzExKgnMSkeId8hVBvG0r9NBTiabqDkC4pAgMBAAGjMTAvMA4GA1UdDwEB/wQEAwICBDAdBgNVHQ4EFgQU1Nby+seD/CQ30uDBeiTu/d8yXlYwDQYJKoZIhvcNAQELBQADggEBACI7F6dsOxEYdMJJu9x5+8caV412n0OiqGV1+zBQsTav7m2XsI0EWZI3kajZKQOSrEBD1qW+78HOi04TJZxt7ErqyPCFjkto1smLVU6B6PcZwowZBszw092cRUgZQg2ERAh60ZJ3R0QNuT0iIEBxV9SU8S3zYg0QYKEV+T6tl5nsfhFLrnf2ck/VN5faokZHgNSrR+8DjKy94rkHKw4+4B1aXKq5d8OrwUvaBP2M0OO/Ts3abEcPKw0lF2jbMa33yeAbA76RgaCKrZnoqqEOztOFdZt35LOBHlKK9uS9ZxeMCnWNSStvyMVplM+CnApXVKq3dt7UKbQGRMl3tB9VAFI="
+  },
+  "outputs": {},
+  "resources": [            
+    {
+      "type": "Microsoft.Network/connections",
+      "name": "[variables('routeBasedConnectionNameVNet2site')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployRouteBasedVirtualNetworkGateway'))]",
+      "scale": null,
+      "properties": {
+        "virtualNetworkGateway1": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworkGateways', variables('routeBasedVirtualNetworkGatewayName'))]",
+          "location": "[resourceGroup().location]"
+        },
+        "localNetworkGateway2": {
+          "id": "[resourceId('Microsoft.Network/localNetworkGateways', variables('localNetworkGatewayName'))]",
+          "location": "[resourceGroup().location]"
+        },
+        "connectionType": "IPsec",
+        "routingWeight": 0,
+        "enableBgp": false,
+        "usePolicyBasedTrafficSelectors": false,
+        "ipsecPolicies": []
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformFunction": "[variables('environmentFunction')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworkGateways', variables('routeBasedVirtualNetworkGatewayName'))]",
+        "[resourceId('Microsoft.Network/localNetworkGateways', variables('localNetworkGatewayName'))]"
+      ]
+    },  
+    {
+      "type": "Microsoft.Network/connections",
+      "name": "[variables('policyBasedConnectionNameVNet2site')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployPolicyBasedVirtualNetworkGateway'))]",
+      "scale": null,
+      "properties": {
+        "virtualNetworkGateway1": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworkGateways', variables('policyBasedVirtualNetworkGatewayName'))]",
+          "location": "[resourceGroup().location]"
+        },
+        "localNetworkGateway2": {
+          "id": "[resourceId('Microsoft.Network/localNetworkGateways', variables('localNetworkGatewayName'))]",
+          "location": "[resourceGroup().location]"
+        },
+        "connectionType": "IPsec",
+        "routingWeight": 0,
+        "enableBgp": false,
+        "usePolicyBasedTrafficSelectors": false,
+        "ipsecPolicies": []
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformFunction": "[variables('environmentFunction')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworkGateways', variables('policyBasedVirtualNetworkGatewayName'))]",
+        "[resourceId('Microsoft.Network/localNetworkGateways', variables('localNetworkGatewayName'))]"
+      ]
+    },  
+    {
+      "type": "Microsoft.Network/localNetworkGateways",
+      "name": "[variables('localNetworkGatewayName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployRouteBasedVirtualNetworkGateway'))]",
+      "scale": null,
+      "properties": {
+        "localNetworkAddressSpace": {
+          "addressPrefixes": ["[variables('localGatewayAddressPrefix')]"]
+        },
+        "gatewayIpAddress": "[parameters('localGatewayIpAddress')]"
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformFunction": "[variables('environmentFunction')]"
+      },
+      "dependsOn": []
+    },     
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('routeBasedNetworkSecurityGroupName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployRouteBasedVirtualNetworkGateway'))]",     
+      "scale": null,
+      "properties": {
+        "provisioningState": "Succeeded",
+        "defaultSecurityRules": [
+          {
+            "name": "AllowVnetInBound",
+            "properties": {
+              "description": "Allow inbound traffic from all VMs in VNET",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 65000,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowAzureLoadBalancerInBound",
+            "properties": {
+              "description": "Allow inbound traffic from azure load balancer",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "AzureLoadBalancer",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 65001,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "DenyAllInBound",
+            "properties": {
+              "description": "Deny all inbound traffic",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 65500,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowVnetOutBound",
+            "properties": {
+              "description": "Allow outbound traffic from all VMs to all VMs in VNET",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 65000,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowInternetOutBound",
+            "properties": {
+              "description": "Allow outbound traffic from all VMs to Internet",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "Internet",
+              "access": "Allow",
+              "priority": 65001,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "DenyAllOutBound",
+            "properties": {
+              "description": "Deny all outbound traffic",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 65500,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          }
+        ]
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformFunction": "[variables('environmentFunction')]"
+      },
+      "dependsOn": []
+    },      
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('policyBasedNetworkSecurityGroupName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployPolicyBasedVirtualNetworkGateway'))]",     
+      "scale": null,
+      "properties": {
+        "provisioningState": "Succeeded",
+        "defaultSecurityRules": [
+          {
+            "name": "AllowVnetInBound",
+            "properties": {
+              "description": "Allow inbound traffic from all VMs in VNET",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 65000,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowAzureLoadBalancerInBound",
+            "properties": {
+              "description": "Allow inbound traffic from azure load balancer",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "AzureLoadBalancer",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 65001,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "DenyAllInBound",
+            "properties": {
+              "description": "Deny all inbound traffic",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 65500,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowVnetOutBound",
+            "properties": {
+              "description": "Allow outbound traffic from all VMs to all VMs in VNET",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 65000,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowInternetOutBound",
+            "properties": {
+              "description": "Allow outbound traffic from all VMs to Internet",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "Internet",
+              "access": "Allow",
+              "priority": 65001,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "DenyAllOutBound",
+            "properties": {
+              "description": "Deny all outbound traffic",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "*",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Deny",
+              "priority": 65500,
+              "direction": "Outbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          }
+        ]
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformFunction": "[variables('environmentFunction')]"
+      },
+      "dependsOn": []
+    },      
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('routeBasedPublicIPAddressesVPNName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployRouteBasedVirtualNetworkGateway'))]",
+      "zones": ["[parameters('availibiltyZone')]"],
+      "scale": null,
+      "properties": {
+        "publicIPAddressVersion": "IPv4",
+        "publicIPAllocationMethod": "Dynamic",
+        "idleTimeoutInMinutes": 4,
+        "dnsSettings": {
+          "domainNameLabel": "[replace(variables('routeBasedPublicIPAddressesVPNName'),'-','')]",
+          "fqdn": "[concat(replace(variables('routeBasedPublicIPAddressesVPNName'),'-',''), resourceGroup().location,'.cloudapp.azure.com')]"
+        }
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformFunction": "[variables('environmentFunction')]"
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('policyBasedPublicIPAddressesVPNName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployPolicyBasedVirtualNetworkGateway'))]",
+      "zones": ["[parameters('availibiltyZone')]"],
+      "scale": null,
+      "properties": {
+        "publicIPAddressVersion": "IPv4",
+        "publicIPAllocationMethod": "Dynamic",
+        "idleTimeoutInMinutes": 4,
+        "dnsSettings": {
+          "domainNameLabel": "[replace(variables('policyBasedPublicIPAddressesVPNName'),'-','')]",
+          "fqdn": "[concat(replace(variables('policyBasedPublicIPAddressesVPNName'),'-',''), resourceGroup().location,'.cloudapp.azure.com')]"
+        }
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformFunction": "[variables('environmentFunction')]"
+      },
+      "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworkGateways",
+      "name": "[variables('routeBasedVirtualNetworkGatewayName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployRouteBasedVirtualNetworkGateway'))]",
+      "scale": null,
+      "properties": {
+        "ipConfigurations": [{
+          "name": "default",
+          "properties": {
+            "privateIPAllocationMethod": "Dynamic",
+            "publicIPAddress": {
+              "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('routeBasedPublicIPAddressesVPNName'))]"
+            },
+            "subnet": {
+              "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('routeBasedVirtualNetworkName'), variables('subnetGateway'))]"
+            }
+          }
+        }],
+        "sku": {
+          "name": "[variables('routeBasedVpnGatewaySku')]",
+          "tier": "[variables('routeBasedVpnGatewaySku')]",
+          "capacity": 2
+        },
+        "gatewayType": "Vpn",
+        "vpnType": "[variables('routeBasedVpnGatewayType')]",
+        "enableBgp": false,
+        "activeActive": false,
+        "vpnClientConfiguration": {
+          "vpnClientAddressPool": {
+            "addressPrefixes": ["[variables('routeBasedVpnGatewayAddressPrefix')]"]
+          },
+          "vpnClientProtocols": "[variables('routeBasedVpnGatewayClientProtocols')]",
+          "vpnClientRootCertificates": [{
+            "name": "[variables('psRootCertificateName')]",
+            "properties": {
+              "publicCertData": "[variables('psRootCertifcatePublicData')]"
+            }
+          }],
+          "vpnClientRevokedCertificates": []
+        }
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformFunction": "[variables('environmentFunction')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('routeBasedPublicIPAddressesVPNName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('routeBasedVirtualNetworkName'), variables('subnetGateway'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworkGateways",
+      "name": "[variables('policyBasedVirtualNetworkGatewayName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployPolicyBasedVirtualNetworkGateway'))]",
+      "scale": null,
+      "properties": {
+        "ipConfigurations": [{
+          "name": "default",
+          "properties": {
+            "privateIPAllocationMethod": "Dynamic",
+            "publicIPAddress": {
+              "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('policyBasedPublicIPAddressesVPNName'))]"
+            },
+            "subnet": {
+              "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('policyBasedVirtualNetworkName'), variables('subnetGateway'))]"
+            }
+          }
+        }],
+        "sku": {
+          "name": "[variables('policyBasedVpnGatewaySku')]",
+          "tier": "[variables('policyBasedVpnGatewaySku')]",
+          "capacity": 2
+        },
+        "gatewayType": "Vpn",
+        "vpnType": "[variables('policyBasedVpnGatewayType')]",
+        "enableBgp": false,
+        "activeActive": false,
+        "vpnClientConfiguration": {
+          "vpnClientAddressPool": {
+            "addressPrefixes": ["[variables('policyBasedVpnGatewayAddressPrefix')]"]
+          },
+          "vpnClientProtocols": "[variables('policyBasedVpnGatewayClientProtocols')]",
+          "vpnClientRootCertificates": [{
+            "name": "[variables('psRootCertificateName')]",
+            "properties": {
+              "publicCertData": "[variables('psRootCertifcatePublicData')]"
+            }
+          }],
+          "vpnClientRevokedCertificates": []
+        }
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformFunction": "[variables('environmentFunction')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('policyBasedPublicIPAddressesVPNName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('policyBasedVirtualNetworkName'), variables('subnetGateway'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('routeBasedVirtualNetworkName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployRouteBasedVirtualNetworkGateway'))]",
+      "scale": null,
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": ["[variables('routeBasedVirtualNetworkAddressPrefix')]"]
+        },
+        "subnets": [{
+            "name": "[variables('subnetDefault')]",
+            "properties": {
+              "addressPrefix": "[variables('routeBasedSubnetDefaultAddressPrefix')]"
+            }
+          },          
+          {
+            "name": "[variables('subnetGateway')]",
+            "properties": {
+              "addressPrefix": "[variables('routeBasedSubnetGatewayAddressPrefix')]"
+            }
+          }
+        ],
+        "virtualNetworkPeerings": []
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformFunction": "[variables('environmentFunction')]"
+      },
+      "dependsOn": []
+    },      
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "name": "[concat(variables('routeBasedVirtualNetworkName'), '/', variables('subnetDefault'))]",
+      "apiVersion": "2017-06-01",
+      "scale": null,
+      "properties": {
+        "addressPrefix": "[variables('routeBasedSubnetDefaultAddressPrefix')]",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('routeBasedNetworkSecurityGroupName'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('routeBasedVirtualNetworkName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('routeBasedNetworkSecurityGroupName'))]"
+      ]
+    },    
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "name": "[concat(variables('routeBasedVirtualNetworkName'), '/', variables('subnetGateway'))]",
+      "apiVersion": "2017-06-01",
+      "scale": null,
+      "properties": {
+        "addressPrefix": "[variables('routeBasedSubnetGatewayAddressPrefix')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('routeBasedVirtualNetworkName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('policyBasedVirtualNetworkName')]",
+      "apiVersion": "2017-06-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[bool(parameters('deployPolicyBasedVirtualNetworkGateway'))]",
+      "scale": null,
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": ["[variables('policyBasedVirtualNetworkAddressPrefix')]"]
+        },
+        "subnets": [{
+            "name": "[variables('subnetDefault')]",
+            "properties": {
+              "addressPrefix": "[variables('policyBasedSubnetDefaultAddressPrefix')]"
+            }
+          },          
+          {
+            "name": "[variables('subnetGateway')]",
+            "properties": {
+              "addressPrefix": "[variables('policyBasedSubnetGatewayAddressPrefix')]"
+            }
+          }
+        ],
+        "virtualNetworkPeerings": []
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformFunction": "[variables('environmentFunction')]"
+      },
+      "dependsOn": []
+    },      
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "name": "[concat(variables('policyBasedVirtualNetworkName'), '/', variables('subnetDefault'))]",
+      "apiVersion": "2017-06-01",
+      "scale": null,
+      "properties": {
+        "addressPrefix": "[variables('policyBasedSubnetDefaultAddressPrefix')]",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('policyBasedNetworkSecurityGroupName'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('policyBasedVirtualNetworkName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('policyBasedNetworkSecurityGroupName'))]"
+      ]
+    },    
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "name": "[concat(variables('policyBasedVirtualNetworkName'), '/', variables('subnetGateway'))]",
+      "apiVersion": "2017-06-01",
+      "scale": null,
+      "properties": {
+        "addressPrefix": "[variables('policyBasedSubnetGatewayAddressPrefix')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('policyBasedVirtualNetworkName'))]"
+      ]
+    }  
+  ]
+}
