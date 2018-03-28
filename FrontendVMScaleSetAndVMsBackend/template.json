@@ -228,7 +228,7 @@
         "diagnosticsProfile": {
           "bootDiagnostics": {
             "enabled": true,
-            "storageUri": "[concat('https', '://', variables('storageAccountGeneralName'), '.blob.core.windows.net', '/')]"
+            "storageUri": "[concat('https', '://', variables('storageAccountDiagnosticsName'), '.blob.core.windows.net', '/')]"
           }
         }
       },
@@ -239,7 +239,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMApp'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountGeneralName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountDiagnosticsName'))]",
         "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]"
       ]
     },
