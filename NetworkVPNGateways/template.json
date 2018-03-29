@@ -11,7 +11,7 @@
     },    
     "environmentType": {
       "type": "string",
-      "allowedValues": ["Net", "Dev", "Prod", "Test"],
+      "allowedValues": ["Tool", "Dev", "Prod", "Test"],
       "defaultValue": "Dev",
       "metadata": {
         "description": "Type of environment where this deployment should occur."

@@ -129,7 +129,7 @@
     "lbScaleSetWebProbePortHttps": 443,
     "lbScaleSetWebProbePortImportP2P": 7405,
     "rdpNatBackendPort": 3389,
-    "frontendPortNatStartValue": 3400,
+    "frontendPortNatStartValue": 33400,
     "frontendPortNatEndValue": "[add(variables('frontendPortNatStartValue'), add(parameters('instancesCount'), 10))]",
     "storageAccountBackupName": "[concat(replace(variables('environmentPrefix'),'-',''), 'bkpv2')]",
     "storageAccountDiagnosticsName": "[concat(replace(variables('environmentPrefix'),'-',''), 'diagv2')]",
