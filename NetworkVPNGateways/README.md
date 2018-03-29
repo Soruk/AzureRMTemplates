@@ -13,6 +13,8 @@ For given resource group, the template deployes:
 * 1 VPN Routed Based gateway with Local Network Gateway (for S2S scenario) and configruation for P2S scenario
 * 1 VPN Policy Bases gateway with Local Newwork Gateway (for S2S scenario)
 
+This IaaS Network envrionment would allow to connect to other virtual network on azur eusing the VNet peering with the 'Allow gateway transit' option activated on the VNet from this resource group and the peering with 'Use remote gateways' option activated on the remote network.
+
 **Remarks**:
 
 The [Azure Availibility Zones](http://aka.ms/azenroll) must be enabled on the subscription, where this template would be deployed.
