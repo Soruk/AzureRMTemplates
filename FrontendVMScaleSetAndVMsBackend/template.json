@@ -745,7 +745,6 @@
       "location": "[resourceGroup().location]",
       "scale": null,
       "properties": {
-        "provisioningState": "Succeeded",
         "defaultSecurityRules": [{
             "name": "AllowAccessHTTP",
             "properties": {
@@ -907,7 +906,6 @@
       "location": "[resourceGroup().location]",
       "scale": null,
       "properties": {
-        "provisioningState": "Succeeded",
         "defaultSecurityRules": [            
           {
             "name": "AllowVnetInBound",
@@ -1020,7 +1018,6 @@
       "apiVersion": "2017-10-01",
       "scale": null,
       "properties": {
-        "provisioningState": "Succeeded",
         "protocol": "*",
         "sourcePortRange": "*",
         "destinationPortRange": "[variables('lbScaleSetWebProbePortHttp')]",
@@ -1044,7 +1041,6 @@
       "apiVersion": "2017-10-01",
       "scale": null,
       "properties": {
-        "provisioningState": "Succeeded",
         "protocol": "*",
         "sourcePortRange": "*",
         "destinationPortRange": "[variables('lbScaleSetWebProbePortHttps')]",
@@ -1068,7 +1064,6 @@
       "apiVersion": "2017-10-01",
       "scale": null,
       "properties": {
-        "provisioningState": "Succeeded",
         "protocol": "*",
         "sourcePortRange": "*",
         "destinationPortRange": "[variables('lbScaleSetWebProbePortImportP2P')]",
