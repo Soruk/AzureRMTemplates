@@ -21,6 +21,9 @@
     "vmSizeDb": {
       "value": null
     },
+    "vmDbBYOL":{
+      "value": null
+    },
     "vmSizeApp": {
       "value": null
     },

@@ -46,6 +46,13 @@
         "description": "Type size of deployed Db VM."
       }
     },
+    "vmDbBYOL": {
+      "defaultValue": false,
+      "type": "bool",
+      "metadata": {
+        "description": "Choose to use own license."
+      }
+    },
     "vmSizeApp": {
       "defaultValue": "Standard_B2s",
       "type": "string",
@@ -129,6 +136,7 @@
     "lbScaleSetWebProbePortHttps": 443,
     "lbScaleSetWebProbePortImportP2P": 7405,
     "rdpNatBackendPort": 3389,
+    "sqlPortNumber": 1433,
     "frontendPortNatStartValue": 33400,
     "frontendPortNatEndValue": "[add(variables('frontendPortNatStartValue'), add(parameters('instancesCount'), 10))]",
     "storageAccountBackupName": "[concat(replace(variables('environmentPrefix'),'-',''), 'bkpv2')]",
@@ -143,9 +151,11 @@
     "publicIPAddressesVPNName": "[concat(variables('environmentPrefix'), '-vpn-pip')]",
     "publicIPAddressesWebName": "[concat(variables('environmentPrefix'), '-web-pip')]",
     "recoveryServiceVaultName": "[concat(variables('environmentPrefix'), '-rsv')]",
-    "backupPolicy10DaysName": "[concat(variables('environmentPrefix'), '-10DaysBackupPolicy')]",
-    "backupPolicy10DaysTimes": ["2018-01-01T03:00:00.000Z"],
-    "backupPolicy10DaysTimeZone": "UTC",
+    "backupDelay": 10,
+    "backupUnit": "Days",
+    "backupPolicyName": "[concat(variables('environmentPrefix'), '-', variables('backupDelay'), variables('backupUnit'), 'BackupPolicy')]",
+    "backupPolicyTimes": ["2018-01-01T03:00:00.000Z"],
+    "backupPolicyTimeZone": "UTC",
     "backupFabric": "Azure",
     "v2VmType": "Microsoft.Compute/virtualMachines",
     "v2VmContainer": "iaasvmcontainer;iaasvmcontainerv2;",
@@ -168,7 +178,12 @@
     "vpnGatewayAddressPrefix": "[concat('172.',variables('virtualNetworkAddressBaseInfix'),'.128.0/24')]",
     "localGatewayAddressPrefix": "[concat('172.',variables('virtualNetworkAddressBaseInfix'),'.192.0/24')]",
     "psRootCertificateName": "P2SRootCertExample",
-    "psRootCertifcatePublicData": "MIIC9TCCAd2gAwIBAgIQKfKt+fwgI5tE1B6jlBY/9TANBgkqhkiG9w0BAQsFADAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwHhcNMTgwMjEzMDcxMzU4WhcNMjgwMjEzMDcyMzU4WjAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAxd7tBvz3ZcI6IJthPDv5lylvrvKHbkrfWtnjqIcHES9VQFnVGLw9OVAmzKgTcC8e8fcolOiNANXZUSjHxOVb5ndlIf3QN9m8UEtcEJf02bXqIExCz3t4pHRJwAWvCyWlDLT4UmlcUzJiUShVAYr2xSEI13Cjl6rIxxWCmTp+dR0BzhcBywYw8nnEWmR2ze2a6AK2pBG6sX+CJfD0pSfHjg/0Z7WwKaYEjija6c8kFYmmuPShUpirll8KxGrrJs+v/rYQXB6VOutVylmsVmp0ex18LPUrPFEtjN0Lmo/DBpvYAmCS2sUzExKgnMSkeId8hVBvG0r9NBTiabqDkC4pAgMBAAGjMTAvMA4GA1UdDwEB/wQEAwICBDAdBgNVHQ4EFgQU1Nby+seD/CQ30uDBeiTu/d8yXlYwDQYJKoZIhvcNAQELBQADggEBACI7F6dsOxEYdMJJu9x5+8caV412n0OiqGV1+zBQsTav7m2XsI0EWZI3kajZKQOSrEBD1qW+78HOi04TJZxt7ErqyPCFjkto1smLVU6B6PcZwowZBszw092cRUgZQg2ERAh60ZJ3R0QNuT0iIEBxV9SU8S3zYg0QYKEV+T6tl5nsfhFLrnf2ck/VN5faokZHgNSrR+8DjKy94rkHKw4+4B1aXKq5d8OrwUvaBP2M0OO/Ts3abEcPKw0lF2jbMa33yeAbA76RgaCKrZnoqqEOztOFdZt35LOBHlKK9uS9ZxeMCnWNSStvyMVplM+CnApXVKq3dt7UKbQGRMl3tB9VAFI="
+    "psRootCertifcatePublicData": "MIIC9TCCAd2gAwIBAgIQKfKt+fwgI5tE1B6jlBY/9TANBgkqhkiG9w0BAQsFADAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwHhcNMTgwMjEzMDcxMzU4WhcNMjgwMjEzMDcyMzU4WjAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAxd7tBvz3ZcI6IJthPDv5lylvrvKHbkrfWtnjqIcHES9VQFnVGLw9OVAmzKgTcC8e8fcolOiNANXZUSjHxOVb5ndlIf3QN9m8UEtcEJf02bXqIExCz3t4pHRJwAWvCyWlDLT4UmlcUzJiUShVAYr2xSEI13Cjl6rIxxWCmTp+dR0BzhcBywYw8nnEWmR2ze2a6AK2pBG6sX+CJfD0pSfHjg/0Z7WwKaYEjija6c8kFYmmuPShUpirll8KxGrrJs+v/rYQXB6VOutVylmsVmp0ex18LPUrPFEtjN0Lmo/DBpvYAmCS2sUzExKgnMSkeId8hVBvG0r9NBTiabqDkC4pAgMBAAGjMTAvMA4GA1UdDwEB/wQEAwICBDAdBgNVHQ4EFgQU1Nby+seD/CQ30uDBeiTu/d8yXlYwDQYJKoZIhvcNAQELBQADggEBACI7F6dsOxEYdMJJu9x5+8caV412n0OiqGV1+zBQsTav7m2XsI0EWZI3kajZKQOSrEBD1qW+78HOi04TJZxt7ErqyPCFjkto1smLVU6B6PcZwowZBszw092cRUgZQg2ERAh60ZJ3R0QNuT0iIEBxV9SU8S3zYg0QYKEV+T6tl5nsfhFLrnf2ck/VN5faokZHgNSrR+8DjKy94rkHKw4+4B1aXKq5d8OrwUvaBP2M0OO/Ts3abEcPKw0lF2jbMa33yeAbA76RgaCKrZnoqqEOztOFdZt35LOBHlKK9uS9ZxeMCnWNSStvyMVplM+CnApXVKq3dt7UKbQGRMl3tB9VAFI=",
+    "sqlServerImageSku": "[if(equals(toLower(parameters('environmentType')),'dev'),'SQLDEV','Standard')]",
+    "sqlServerImageOffer": "[if(and(parameters('vmDbBYOL'),not(equals(toLower(parameters('environmentType')),'dev'))),'SQL2016SP1-WS2016-BYOL','SQL2016SP1-WS2016')]",
+    "sqlAutopatchingDayOfWeek": "Sunday",
+    "sqlAutopatchingStartHour": 4,
+    "sqlAutopatchingWindowDuration": 60
   },
   "outputs": {},
   "resources": [{
@@ -195,7 +210,7 @@
             "createOption": "FromImage",
             "caching": "ReadWrite",
             "managedDisk": {
-              "storageAccountType": "Premium_LRS"
+              "storageAccountType": "Standard_LRS"
             },
             "diskSizeGB": 128
           },
@@ -207,8 +222,19 @@
             "managedDisk": {
               "storageAccountType": "Standard_LRS"
             },
+              "diskSizeGB": 63
+            },
+            {
+              "lun": 1,
+              "name": "[concat(variables('vmNameApp'),'-imageDisk')]",
+              "createOption": "Empty",
+              "caching": "ReadOnly",
+              "managedDisk": {
+                "storageAccountType": "Standard_LRS"
+              },
             "diskSizeGB": 127
-          }]
+            }
+          ]
         },
         "osProfile": {
           "computerName": "[variables('vmNameApp')]",
@@ -287,8 +313,8 @@
         "storageProfile": {
           "imageReference": {
             "publisher": "MicrosoftSQLServer",
-            "offer": "SQL2016SP1-WS2016",
-            "sku": "Standard",
+            "offer": "[variables('sqlServerImageOffer')]",
+            "sku": "[variables('sqlServerImageSku')]",
             "version": "latest"
           },
           "osDisk": {
@@ -297,7 +323,7 @@
             "createOption": "FromImage",
             "caching": "ReadWrite",
             "managedDisk": {
-              "storageAccountType": "Premium_LRS"
+              "storageAccountType": "Standard_LRS"
             },
             "diskSizeGB": 128
           },
@@ -307,7 +333,7 @@
             "createOption": "Empty",
             "caching": "ReadOnly",
             "managedDisk": {
-              "storageAccountType": "Premium_LRS"
+              "storageAccountType": "Standard_LRS"
             },
             "diskSizeGB": 127
           }]
@@ -375,6 +401,67 @@
       }
     },
     {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmNameDb'), '/', 'SqlIaasExtension-', variables('vmNameDb'))]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountBackupName'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.SqlServer.Management",
+        "settings": {
+          "AutoTelemetrySettings": {
+            "Region": "[resourceGroup().location]"
+          },     
+          "AutoBackupSettings": {
+            "Enable": true,
+            "RetentionPeriod": "[variables('backupDelay')]",
+            "EnableEncryption": true
+          },
+          "AutoPatchingSettings": {
+            "PatchCategory": "WindowsMandatoryUpdates",
+            "Enable": true,
+            "DayOfWeek": "[variables('sqlAutopatchingDayOfWeek')]",
+            "MaintenanceWindowStartingHour": "[variables('sqlAutopatchingStartHour')]",
+            "MaintenanceWindowDuration": "[variables('sqlAutopatchingWindowDuration')]"
+        },   
+          "KeyVaultCredentialSettings": {
+            "Enable": false,
+            "CredentialName": ""
+          },
+          "ServerConfigurationsManagementSettings": {
+            "SQLConnectivityUpdateSettings": {
+              "ConnectivityType": "Private",
+              "Port": "[variables('sqlPortNumber')]"
+            },
+            "SQLWorkloadTypeUpdateSettings": {
+              "SQLWorkloadType": "GENERAL"
+            },           
+            "AdditionalFeaturesServerConfigurations": {
+              "IsRServicesEnabled": false
+            }
+          }
+        },
+        "typeHandlerVersion": "1.2",
+        "autoUpgradeMinorVersion": true,
+        "protectedSettings": {
+          "SQLAuthUpdateUserName": "[parameters('vmAdminUsername')]",
+          "SQLAuthUpdatePassword": "[parameters('vmAdminPassword')]",
+          "StorageUrl": "[reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountBackupName')), '2015-06-15').primaryEndpoints['blob']]",
+          "StorageAccessKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountBackupName')), '2015-06-15').key1]",
+          "Password": "[parameters('vmAdminPassword')]"
+        },
+        "type": "SqlIaaSAgent"
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
+      }
+    },
+    {
       "type": "Microsoft.Compute/virtualMachineScaleSets",
       "sku": {
         "name": "[parameters('vmSizeWeb')]",
@@ -407,8 +494,9 @@
               "createOption": "FromImage",
               "caching": "ReadWrite",
               "managedDisk": {
-                "storageAccountType": "Premium_LRS"
-              }
+                "storageAccountType": "Standard_LRS"
+              },
+              "diskSizeGB": 128            
             },
             "imageReference": {
               "publisher": "MicrosoftWindowsServer",
@@ -906,8 +994,7 @@
       "location": "[resourceGroup().location]",
       "scale": null,
       "properties": {
-        "defaultSecurityRules": [            
-          {
+        "defaultSecurityRules": [{
             "name": "AllowVnetInBound",
             "properties": {
               "description": "Allow inbound traffic from all VMs in VNET",
@@ -1349,22 +1436,22 @@
     },
     {
       "type": "Microsoft.RecoveryServices/vaults/backupPolicies",
-      "name": "[concat(variables('recoveryServiceVaultName'), '/', variables('backupPolicy10DaysName'))]",
+      "name": "[concat(variables('recoveryServiceVaultName'), '/', variables('backupPolicyName'))]",
       "apiVersion": "2016-06-01",
       "properties": {
         "backupManagementType": "AzureIaasVM",
         "schedulePolicy": {
           "scheduleRunFrequency": "Daily",
           "scheduleRunDays": null,
-          "scheduleRunTimes": "[variables('backupPolicy10DaysTimes')]",
+          "scheduleRunTimes": "[variables('backupPolicyName')]",
           "schedulePolicyType": "SimpleSchedulePolicy"
         },
         "retentionPolicy": {
           "dailySchedule": {
-            "retentionTimes": "[variables('backupPolicy10DaysTimes')]",
+            "retentionTimes": "[variables('backupPolicyName')]",
             "retentionDuration": {
-              "count": 10,
-              "durationType": "Days"
+              "count": "[variables('backupDelay')]",
+              "durationType": "[variables('backupUnit')]"
             }
           },
           "weeklySchedule": null,
@@ -1372,7 +1459,7 @@
           "yearlySchedule": null,
           "retentionPolicyType": "LongTermRetentionPolicy"
         },
-        "timeZone": "[variables('backupPolicy10DaysTimeZone')]"
+        "timeZone": "[variables('backupPolicyTimeZone')]"
       },
       "tags": {
         "PlatformName": "[parameters('environmentName')]",
@@ -1394,7 +1481,7 @@
       },
       "properties": {
         "protectedItemType": "[variables('v2VmType')]",
-        "policyId": "[resourceId('Microsoft.RecoveryServices/vaults/backupPolicies',variables('recoveryServiceVaultName'),variables('backupPolicy10DaysName'))]",
+        "policyId": "[resourceId('Microsoft.RecoveryServices/vaults/backupPolicies',variables('recoveryServiceVaultName'),variables('backupPolicyName'))]",
         "sourceResourceId": "[resourceId(subscription().subscriptionId,resourceGroup().name,'Microsoft.Compute/virtualMachines',variables('vmsToProtect')[copyIndex()])]"
       },
       "tags": {
@@ -1404,7 +1491,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.RecoveryServices/vaults', variables('recoveryServiceVaultName'))]",
-        "[resourceId('Microsoft.RecoveryServices/vaults/backupPolicies',variables('recoveryServiceVaultName'),variables('backupPolicy10DaysName'))]",
+        "[resourceId('Microsoft.RecoveryServices/vaults/backupPolicies',variables('recoveryServiceVaultName'),variables('backupPolicyName'))]",
         "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameApp'))]",
         "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]"
       ]
