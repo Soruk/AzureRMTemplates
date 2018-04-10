@@ -376,8 +376,8 @@
       "name": "[concat(variables('vmNameDb'), '/', 'configureScript-', variables('vmNameDb'))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]",
-        "[concat(resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb')), '/extensions/', 'sqlIaasExtension-', variables('vmNameDb'))]"
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]",
+        "[concat('Microsoft.Compute/virtualMachines/extensions/', variables('vmNameDb'), '/', 'sqlIaasExtension-', variables('vmNameDb'))]"
       ],
       "properties": {
         "publisher": "Microsoft.Compute",
@@ -407,7 +407,7 @@
       "name": "[concat(variables('vmNameDb'), '/', 'sqlIaasExtension-', variables('vmNameDb'))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]",
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountBackupName'))]"
       ],
       "properties": {
