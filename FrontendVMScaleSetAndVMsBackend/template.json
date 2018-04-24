@@ -278,7 +278,7 @@
         "publisher": "Microsoft.Compute",
         "settings": {
           "fileUris": [
-            "[concat('https', '://', parameters('resourcesStorageAccountName'), '.blob.core.windows.net', '/', toLower(parameters('environmentType')), '/configure.srvapp.ps1')]"
+            "[concat('https', '://', parameters('resourcesStorageAccountName'), '.blob.core.windows.net', '/', toLower(parameters('environmentType')), '-scripts', '/configure.srvapp.ps1')]"
           ]
         },
         "typeHandlerVersion": "1.9",
@@ -383,7 +383,7 @@
         "publisher": "Microsoft.Compute",
         "settings": {
           "fileUris": [
-            "[concat('https', '://', parameters('resourcesStorageAccountName'), '.blob.core.windows.net', '/', toLower(parameters('environmentType')), '/configure.srvdb.ps1')]"
+            "[concat('https', '://', parameters('resourcesStorageAccountName'), '.blob.core.windows.net', '/', toLower(parameters('environmentType')), '-scripts', '/configure.srvdb.ps1')]"
           ]
         },
         "typeHandlerVersion": "1.9",
@@ -541,7 +541,7 @@
                 "publisher": "Microsoft.Compute",
                 "settings": {
                   "fileUris": [
-                    "[concat('https', '://', parameters('resourcesStorageAccountName'), '.blob.core.windows.net', '/', toLower(parameters('environmentType')), '/configure.srvweb.ps1')]"
+                    "[concat('https', '://', parameters('resourcesStorageAccountName'), '.blob.core.windows.net', '/', toLower(parameters('environmentType')), '-scripts', '/configure.srvweb.ps1')]"
                   ]
                 },
                 "typeHandlerVersion": "1.9",
@@ -1442,12 +1442,12 @@
         "schedulePolicy": {
           "scheduleRunFrequency": "Daily",
           "scheduleRunDays": null,
-          "scheduleRunTimes": "[variables('backupPolicyName')]",
+          "scheduleRunTimes": "[variables('backupPolicyTimes')]",
           "schedulePolicyType": "SimpleSchedulePolicy"
         },
         "retentionPolicy": {
           "dailySchedule": {
-            "retentionTimes": "[variables('backupPolicyName')]",
+            "retentionTimes": "[variables('backupPolicyTimes')]",
             "retentionDuration": {
               "count": "[variables('backupDelay')]",
               "durationType": "[variables('backupUnit')]"
