@@ -42,6 +42,9 @@
     "localGatewayIpAddress": {
       "value": null
     },
+    "authorizedImportP2PIpAddresses": {
+      "value": null
+    },
     "resourcesStorageAccountName": {
       "value": null
     },
