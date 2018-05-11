@@ -34,6 +34,7 @@
     },
     "vmSizeWeb": {
       "defaultValue": "Standard_B2s",
+      "allowedValues": ["Standard_B2s", "Standard_D2s_v3", "Standard_D4s_v3"],
       "type": "string",
       "metadata": {
         "description": "Type size of deployed Web VM."
@@ -41,6 +42,7 @@
     },
     "vmSizeDb": {
       "defaultValue": "Standard_B2s",
+      "allowedValues": ["Standard_B2sDev", "Standard_D2s_v3", "Standard_D4s_v3"],
       "type": "string",
       "metadata": {
         "description": "Type size of deployed Db VM."
@@ -55,6 +57,7 @@
     },
     "vmSizeApp": {
       "defaultValue": "Standard_B2s",
+      "allowedValues": ["Standard_B2s", "Standard_D2s_v3", "Standard_D4s_v3"],
       "type": "string",
       "metadata": {
         "description": "Type size of deployed App VM."
@@ -186,8 +189,8 @@
     "localGatewayAddressPrefix": "[concat('172.',variables('virtualNetworkAddressBaseInfix'),'.192.0/24')]",
     "psRootCertificateName": "P2SRootCertExample",
     "psRootCertifcatePublicData": "MIIC9TCCAd2gAwIBAgIQKfKt+fwgI5tE1B6jlBY/9TANBgkqhkiG9w0BAQsFADAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwHhcNMTgwMjEzMDcxMzU4WhcNMjgwMjEzMDcyMzU4WjAdMRswGQYDVQQDDBJQMlNSb290Q2VydEV4YW1wbGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAxd7tBvz3ZcI6IJthPDv5lylvrvKHbkrfWtnjqIcHES9VQFnVGLw9OVAmzKgTcC8e8fcolOiNANXZUSjHxOVb5ndlIf3QN9m8UEtcEJf02bXqIExCz3t4pHRJwAWvCyWlDLT4UmlcUzJiUShVAYr2xSEI13Cjl6rIxxWCmTp+dR0BzhcBywYw8nnEWmR2ze2a6AK2pBG6sX+CJfD0pSfHjg/0Z7WwKaYEjija6c8kFYmmuPShUpirll8KxGrrJs+v/rYQXB6VOutVylmsVmp0ex18LPUrPFEtjN0Lmo/DBpvYAmCS2sUzExKgnMSkeId8hVBvG0r9NBTiabqDkC4pAgMBAAGjMTAvMA4GA1UdDwEB/wQEAwICBDAdBgNVHQ4EFgQU1Nby+seD/CQ30uDBeiTu/d8yXlYwDQYJKoZIhvcNAQELBQADggEBACI7F6dsOxEYdMJJu9x5+8caV412n0OiqGV1+zBQsTav7m2XsI0EWZI3kajZKQOSrEBD1qW+78HOi04TJZxt7ErqyPCFjkto1smLVU6B6PcZwowZBszw092cRUgZQg2ERAh60ZJ3R0QNuT0iIEBxV9SU8S3zYg0QYKEV+T6tl5nsfhFLrnf2ck/VN5faokZHgNSrR+8DjKy94rkHKw4+4B1aXKq5d8OrwUvaBP2M0OO/Ts3abEcPKw0lF2jbMa33yeAbA76RgaCKrZnoqqEOztOFdZt35LOBHlKK9uS9ZxeMCnWNSStvyMVplM+CnApXVKq3dt7UKbQGRMl3tB9VAFI=",
-    "sqlServerImageSku": "[if(equals(toLower(parameters('environmentType')),'dev'),'SQLDEV','Standard')]",
-    "sqlServerImageOffer": "[if(and(parameters('vmDbBYOL'),not(equals(toLower(parameters('environmentType')),'dev'))),'SQL2016SP1-WS2016-BYOL','SQL2016SP1-WS2016')]",
+    "sqlServerImageSku": "[if(not(equals(toLower(parameters('environmentType')),'dev')),'Standard','SQLDEV')]",
+    "sqlServerImageOffer": "SQL2016SP1-WS2016",
     "sqlAutopatchingDayOfWeek": "Sunday",
     "sqlAutopatchingStartHour": 4,
     "sqlAutopatchingWindowDuration": 60
@@ -233,7 +236,7 @@
             },
             {
               "lun": 1,
-              "name": "[concat(variables('vmNameApp'),'-imageDisk')]",
+              "name": "[concat(variables('vmNameApp'),'-imageDisk1')]",
               "createOption": "Empty",
               "caching": "ReadOnly",
               "managedDisk": {
