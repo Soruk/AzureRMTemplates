@@ -6,27 +6,37 @@
 Param (   
     [ValidateSet("dev", "test", "prod")]
     [string]$environmentType = "dev",
+    [int]$environmentNumber,
     [string]$srvDbName,
     [string]$srvAppName,
+    [string]$customWebDomains,
     [string]$storageAccountName,
     [string]$storageAccountKey,
     [string]$vmAdminUsername,
     [string]$vmAdminPassword
 )
-
-Write-Host "Start configuring the Web VM"
+$logFile=$script:MyInvocation.MyCommand.Path + ".txt"
+if (Test-Path -Path $logFile -ErrorAction SilentlyContinue) {
+    Remove-Item -Path $logFile -Force -Recurse
+} 
+Write-Output "Start configuring the Web VM" | Out-File $logFile
 
 $password = ConvertTo-SecureString $vmAdminPassword -AsPlainText -Force
 $credential = New-Object System.Management.Automation.PSCredential("$env:USERDOMAIN\$vmAdminUsername", $password)
  
-Write-Host "Entering Custom Script Extension..."
-Write-Host "Output Global $environmentType, $srvDbName, $srvAppName,  $storageAccountName, $storageAccountKey"
+Write-Output "Entering Custom Script Extension..." | Out-File $logFile -Append
+Write-Output "Output Global $environmentType, $environmentNumber, $srvDbName, $srvAppName,  $storageAccountName, $storageAccountKey" | Out-File $logFile -Append
+
+$customWebDomainsArray = $customWebDomains.Split(",")
 
 $globalArgumentList = @(
-    $PSScriptRoot,
+    $PSScriptRoot,    
+    $logFile,
     $environmentType,
+    $environmentNumber,
     $srvDbName,
     $srvAppName,
+	$customWebDomainsArray,
     $storageAccountName,
     $storageAccountKey,
     $vmAdminUsername,
@@ -36,20 +46,23 @@ Invoke-Command -Credential $credential -ComputerName $env:COMPUTERNAME -Argument
     Param 
     (
         [string]$localWorkingDir,
+        [string]$localLogFile,
         [string]$localEnvironmentType,
+        [int]$localEnvironmentNumber,
         [string]$localSrvDbName,
         [string]$localSrvAppName,
+		[string[]]$localCustomWebDomains,
         [string]$localStorageAccountName,
         [string]$localStorageAccountKey,
         [string]$localVmAdminUsername,
         [string]$localVmAdminPassword
     ) 
-    Write-Host "Output Loacal $localWorkingDir, $localEnvironmentType, $localSrvDbName, $localSrvAppName,  $localStorageAccountName, $localStorageAccountKey"
+    Write-Output "Output Loacal  $localWorkingDir, $localLogFile, $localEnvironmentType, $localEnvironmentNumber, $localSrvDbName, $localSrvAppName,  $localStorageAccountName, $localStorageAccountKey" | Out-File $localLogFile -Append
     
     #################################
     # Elevated custom scripts go here 
     #################################
-    Write-Host "Entering Elevated Custom Script Commands..."
+    Write-Output "Entering Elevated Custom Script Commands..." | Out-File $localLogFile -Append
     
     # Constants
     $localResourcesPath = "C:\INSTALL"
@@ -59,13 +72,13 @@ Invoke-Command -Credential $credential -ComputerName $env:COMPUTERNAME -Argument
     $uncWorkingPath = "\\$localSrvAppName\WorkingDirectory\";
 
     # Firewall
-    Write-Host "Updating Firewall rules"
+    Write-Output "Updating Firewall rules" | Out-File $localLogFile -Append
     netsh advfirewall firewall add rule name="https" dir=in action=allow protocol=TCP localport=443
     netsh advfirewall firewall add rule name="http" dir=in action=allow protocol=TCP localport=80
 
 
     # Install Windows Features
-    Write-Host "Installing Windows Features"
+    Write-Output "Installing Windows Features" | Out-File $localLogFile -Append
     Install-WindowsFeature Web-Server, Web-Asp-Net45, Web-Basic-Auth, Web-Windows-Auth, NET-WCF-Services45 -IncludeManagementTools
  
 
@@ -75,43 +88,43 @@ Invoke-Command -Credential $credential -ComputerName $env:COMPUTERNAME -Argument
     if ($dvdDrive -ne $null) {
         # Get Current Drive Letter for CD/DVD Drive
         $oldDvdDriveLetter = $dvdDrive | Select-Object -ExpandProperty DriveLetter
-        Write-Output "Current CD/DVD Drive Letter is $oldDvdDriveLetter"
+        Write-Output "Current CD/DVD Drive Letter is $oldDvdDriveLetter" | Out-File $localLogFile -Append
  
         # Confirm New Drive Letter is NOT used
         if (-not (Test-Path -Path $newDvdDriveLetter)) {
             # Change CD/DVD Drive Letter
             $dvdDrive | Set-WmiInstance -Arguments @{DriveLetter = "$newDvdDriveLetter"}
-            Write-Output "Updated CD/DVD Drive Letter as $newDvdDriveLetter"
+            Write-Output "Updated CD/DVD Drive Letter as $newDvdDriveLetter" | Out-File $localLogFile -Append
         }
         else {
-            Write-Output "Error: Drive Letter $newDvdDriveLetter Already In Use"
+            Write-Output "Error: Drive Letter $newDvdDriveLetter Already In Use" | Out-File $localLogFile -Append
         }
     }
     else {
-        Write-Output "Error: No CD/DVD Drive Available !"
+        Write-Output "Error: No CD/DVD Drive Available !" | Out-File $localLogFile -Append
     }
 
     # Folders
-    Write-Host "Creating folders"
+    Write-Output "Creating folders" | Out-File $localLogFile -Append
     if (!(Test-Path -Path $localResourcesPath)) {
         New-Item -ItemType Directory $localResourcesPath
     }
 
     # PS Providres
-    Write-Host  "Installing PS Providers"
+    Write-Output  "Installing PS Providers" | Out-File $localLogFile -Append
     if (!(Get-PackageProvider -ListAvailable -Name Nuget)) {
         Install-PackageProvider Nuget -Force
     }
 
     # PS Modules
-    Write-Host  "Installing PS Modules"
+    Write-Output  "Installing PS Modules" | Out-File $localLogFile -Append
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
     if (!(Get-Module -ListAvailable -Name AzureRM)) {
         Install-Module AzureRM -Force
     }
 
     # Downloading files from Azure Blob Storage
-    Write-Host "Downloading Files From Azure Blob Storage"
+    Write-Output "Downloading Files From Azure Blob Storage" | Out-File $localLogFile -Append
     $context = New-AzureStorageContext -StorageAccountName $localStorageAccountName -StorageAccountKey $localStorageAccountKey
     $blobNamePrerequisitesPS1 = "configure.prerequisites.ps1"
     $blobNameMSI = "ApplicationServer.msi"
@@ -135,7 +148,7 @@ Invoke-Command -Credential $credential -ComputerName $env:COMPUTERNAME -Argument
     Get-AzureStorageBlobContent -Blob $blobNamePS1 -Container $containerName -Destination $localResourcesPath -Context $context  
         
     # Installing prerequisites
-    Write-Host "Installing Prerequisites"
+    Write-Output "Installing Prerequisites" | Out-File $localLogFile -Append
     $argumentList = @()
     $argumentList += ("-containerName", "$containerName-req")
     $argumentList += ("-storageAccountName", $localStorageAccountName)
@@ -145,14 +158,13 @@ Invoke-Command -Credential $credential -ComputerName $env:COMPUTERNAME -Argument
     Invoke-Expression "$pathPrerequisitesPS1 $argumentList"
 
     # Install the App Setup
-    Write-Host "Installing Application Server"
+    Write-Output "Installing Application Server" | Out-File $localLogFile -Append
     $argumentList = @()
     $argumentList += ("-INSTALLFOLDER", $installFolder)
     $argumentList += ("-INSTANCESQL", $localSrvDbName)
     $argumentList += ("-ADDLOCAL", "`"Comma,Separated,Features`"")
-    $argumentList += ("-WORKINGDIRECTORY", $uncWorkingPath)
-            
+    $argumentList += ("-WORKINGDIRECTORY", $uncWorkingPath)            
     Invoke-Expression "$pathPS1 $argumentList"
   
-    Write-Host "End configuring the Web VM"
+    Write-Output "End configuring the Web VM" | Out-File $localLogFile -Append
 }

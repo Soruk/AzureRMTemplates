@@ -45,6 +45,9 @@
     "authorizedImportP2PIpAddresses": {
       "value": null
     },
+    "customWebDomains":{
+      "value": null
+    },
     "resourcesStorageAccountName": {
       "value": null
     },

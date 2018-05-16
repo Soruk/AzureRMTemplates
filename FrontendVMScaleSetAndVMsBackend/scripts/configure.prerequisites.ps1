@@ -1,6 +1,10 @@
+#REQUIRES -RunAsAdministrator
 <#
     .SYNOPSIS
         Downloads and configures prerequisites application.
+
+    .DESCRIPTION
+        This script downloads prerequisites from Azure Blob storage and install them on the server.
 #>
 
 Param (   
@@ -9,15 +13,18 @@ Param (
     [string]$storageAccountKey,
     [string]$localResourcesPath
 )
-
-Write-Host "Start configuring the Prerequisites"
+$logFile=$script:MyInvocation.MyCommand.Path + ".txt"
+if (Test-Path -Path $logFile -ErrorAction SilentlyContinue) {
+    Remove-Item -Path $logFile -Force -Recurse
+} 
+Write-Output "Start configuring the Prerequisites" | Out-File $logFile
 
 $argumentsMSIFormat = "/i `"###MSIFILEPATH###`" $Properties /q /l!*vx `"###MSIFILEPATH###.txt`""	
 $argumentsEXEFormatOld = "/q /norestart /log `"###EXEFILEPATH###`".txt"
 $argumentsEXEFormat = "/install /quiet /norestart /log `"###EXEFILEPATH###`".txt"
 
 # Downloading files from Azure Blob Storage
-Write-Host "Downloading Prerequistes"
+Write-Output "Downloading Prerequistes" | Out-File $logFile -Append
 $context = New-AzureStorageContext -StorageAccountName $storageAccountName -StorageAccountKey $storageAccountKey
 $blobNameMFCx86 = "MFC.vcredistMFC.x86.exe"    
 $blobNameMVCPP2010x86 = "MVCPP.2010.1.vcredist.x86.exe"    
@@ -32,8 +39,10 @@ $blobNameSqlClrx86 = "SQLSysClrTypes.2016.x86.msi"
 $blobNameSqlClrx64 = "SQLSysClrTypes.2016.x64.msi"
 $blobNameSMOx86 = "SharedManagementObjects.2016.x86.msi"    
 $blobNameSMOx64 = "SharedManagementObjects.2016.x64.msi"
-$blobNameCRx86 = "CRRuntime.13.0.21.x86.msi"    
-$blobNameCRx64 = "CRRuntime.13.0.21.x64.msi"
+$blobNameCRx86 = "CRRuntime.13.0.22.x86.msi"
+$blobNameCRx64 = "CRRuntime.13.0.22.x64.msi"
+$blobNameUrlRewritex86 = "UrlRewrite.2.1.x86.msi"    
+$blobNameUrlRewritex64 = "UrlRewrite.2.1.x64.msi"
 
 $pathMFCx86 = Join-Path -Path $localResourcesPath $blobNameMFCx86
 if (Test-Path -Path $pathMFCx86) {
@@ -96,6 +105,15 @@ if (Test-Path -Path $pathCRx64) {
     Remove-Item -Path $pathCRx64 -Force 
 }
 
+$pathUrlRewritex86 = Join-Path -Path $localResourcesPath $blobNameUrlRewritex86
+if (Test-Path -Path $pathUrlRewritex86) {
+    Remove-Item -Path $pathUrlRewritex86 -Force 
+}
+$pathUrlRewritex64 = Join-Path -Path $localResourcesPath $blobNameUrlRewritex64
+if (Test-Path -Path $pathUrlRewritex64) {
+    Remove-Item -Path $pathUrlRewritex64 -Force 
+}
+
 Get-AzureStorageBlobContent -Blob $blobNameMFCx86 -Container $containerName -Destination $localResourcesPath -Context $context  
 Get-AzureStorageBlobContent -Blob $blobNameMVCPP2010x86 -Container $containerName -Destination $localResourcesPath -Context $context     
 Get-AzureStorageBlobContent -Blob $blobNameMVCPP2010x64 -Container $containerName -Destination $localResourcesPath -Context $context  
@@ -111,9 +129,11 @@ Get-AzureStorageBlobContent -Blob $blobNameSMOx64 -Container $containerName -Des
 Get-AzureStorageBlobContent -Blob $blobNameSMOx86 -Container $containerName -Destination $localResourcesPath -Context $context  
 Get-AzureStorageBlobContent -Blob $blobNameCRx64 -Container $containerName -Destination $localResourcesPath -Context $context     
 Get-AzureStorageBlobContent -Blob $blobNameCRx86 -Container $containerName -Destination $localResourcesPath -Context $context  
+Get-AzureStorageBlobContent -Blob $blobNameUrlRewritex64 -Container $containerName -Destination $localResourcesPath -Context $context     
+Get-AzureStorageBlobContent -Blob $blobNameUrlRewritex86 -Container $containerName -Destination $localResourcesPath -Context $context  
 
 #Installing Prerequistes
-Write-Host "Installing Prerequisites"
+Write-Output "Installing Prerequisites" | Out-File $logFile -Append
 Start-Process -FilePath $pathMFCx86 -ArgumentList "/q" -Wait -PassThru
 Start-Process -FilePath $pathMVCPP2010x86 -ArgumentList $argumentsEXEFormatOld.Replace("###EXEFILEPATH###", $pathMVCPP2010x86) -Wait -PassThru
 Start-Process -FilePath $pathMVCPP2010x64 -ArgumentList $argumentsEXEFormatOld.Replace("###EXEFILEPATH###", $pathMVCPP2010x64) -Wait -PassThru
@@ -130,5 +150,7 @@ Start-Process -FilePath msiexec.exe -ArgumentList $argumentsMSIFormat.Replace("#
 Start-Process -FilePath msiexec.exe -ArgumentList $argumentsMSIFormat.Replace("###MSIFILEPATH###", $pathSMOx64) -Wait -PassThru
 Start-Process -FilePath msiexec.exe -ArgumentList $argumentsMSIFormat.Replace("###MSIFILEPATH###", $pathCRx86) -Wait -PassThru
 Start-Process -FilePath msiexec.exe -ArgumentList $argumentsMSIFormat.Replace("###MSIFILEPATH###", $pathCRx64) -Wait -PassThru
+Start-Process -FilePath msiexec.exe -ArgumentList $argumentsMSIFormat.Replace("###MSIFILEPATH###", $pathUrlRewritex86) -Wait -PassThru
+Start-Process -FilePath msiexec.exe -ArgumentList $argumentsMSIFormat.Replace("###MSIFILEPATH###", $pathUrlRewritex64) -Wait -PassThru
 
-Write-Host "End configuring the Prerequisites"
+Write-Output "End configuring the Prerequisites" | Out-File $logFile -Append

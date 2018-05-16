@@ -42,7 +42,7 @@
     },
     "vmSizeDb": {
       "defaultValue": "Standard_B2s",
-      "allowedValues": ["Standard_B2sDev", "Standard_D2s_v3", "Standard_D4s_v3"],
+      "allowedValues": ["Standard_B2s", "Standard_D2s_v3", "Standard_D4s_v3"],
       "type": "string",
       "metadata": {
         "description": "Type size of deployed Db VM."
@@ -95,14 +95,21 @@
       "defaultValue": "127.0.0.1",
       "type": "string",
       "metadata": {
-        "description": "Type public IP of your network on premise to create VPN Site to Site."
+        "description": "The public IP of your network on premise to create VPN Site to Site."
       }
     },
     "authorizedImportP2PIpAddresses": {
       "defaultValue": ["127.0.0.1", "1.1.1.1"],
       "type": "array",
       "metadata": {
-        "description": "Type array of pulblic IP addresses authorized to use Import P2P functionality."
+        "description": "The array of pulblic IP addresses authorized to use Import P2P functionality."
+      }
+    },
+    "customWebDomains": {
+      "defaultValue": ["name1.mydomain.com", "name2.mydomain.com"],
+      "type": "array",
+      "metadata": {
+        "description": "The array of custom web domains."
       }
     },
     "resourcesStorageAccountName": {
@@ -225,13 +232,13 @@
             "diskSizeGB": 128
           },
           "dataDisks": [{
-            "lun": 0,
-            "name": "[concat(variables('vmNameApp'),'-dataDisk')]",
-            "createOption": "Empty",
-            "caching": "ReadOnly",
-            "managedDisk": {
-              "storageAccountType": "Standard_LRS"
-            },
+              "lun": 0,
+              "name": "[concat(variables('vmNameApp'),'-dataDisk')]",
+              "createOption": "Empty",
+              "caching": "ReadOnly",
+              "managedDisk": {
+                "storageAccountType": "Standard_LRS"
+              },
               "diskSizeGB": 63
             },
             {
@@ -242,7 +249,7 @@
               "managedDisk": {
                 "storageAccountType": "Standard_LRS"
               },
-            "diskSizeGB": 127
+              "diskSizeGB": 127
             }
           ]
         },
@@ -252,7 +259,8 @@
           "adminPassword": "[parameters('vmAdminPassword')]",
           "windowsConfiguration": {
             "provisionVMAgent": true,
-            "enableAutomaticUpdates": true
+            "enableAutomaticUpdates": true,
+            "timeZone": "Romance Standard Time" 
           },
           "secrets": []
         },
@@ -276,6 +284,7 @@
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMApp'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountDiagnosticsName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameBackend'))]",
         "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]"
       ]
     },
@@ -294,7 +303,7 @@
         "typeHandlerVersion": "1.9",
         "autoUpgradeMinorVersion": true,
         "protectedSettings": {
-          "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File configure.srvapp.ps1 -environmentType ', toLower(parameters('environmentType')), ' -srvDbName ', variables('vmNameDb'), ' -srvAppName ', variables('vmNameApp'), ' -storageAccountName ', parameters('resourcesStorageAccountName'), ' -storageAccountKey ', parameters('resourcesStorageAccountKey'), ' -vmAdminUsername ', parameters('vmAdminUsername'), ' -vmAdminPassword ', parameters('vmAdminPassword'))]",
+          "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File configure.srvapp.ps1 -environmentType ', toLower(parameters('environmentType')), ' -environmentNumber ', parameters('environmentNumber'), ' -srvDbName ', variables('vmNameDb'), ' -srvAppName ', variables('vmNameApp'), ' -storageAccountName ', parameters('resourcesStorageAccountName'), ' -storageAccountKey ', parameters('resourcesStorageAccountKey'), ' -vmAdminUsername ', parameters('vmAdminUsername'), ' -vmAdminPassword ', parameters('vmAdminPassword'))]",
           "storageAccountName": "[parameters('resourcesStorageAccountName')]",
           "storageAccountKey": "[parameters('resourcesStorageAccountKey')]"
         },
@@ -354,7 +363,8 @@
           "adminPassword": "[parameters('vmAdminPassword')]",
           "windowsConfiguration": {
             "provisionVMAgent": true,
-            "enableAutomaticUpdates": true
+            "enableAutomaticUpdates": true,
+            "timeZone": "Romance Standard Time" 
           },
           "secrets": []
         },
@@ -377,7 +387,8 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceNameVMDb'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountDiagnosticsName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountDiagnosticsName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameBackend'))]"
       ]
     },
     {
@@ -399,7 +410,7 @@
         "typeHandlerVersion": "1.9",
         "autoUpgradeMinorVersion": true,
         "protectedSettings": {
-          "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File configure.srvdb.ps1 -environmentType ', toLower(parameters('environmentType')), ' -srvDbName ', variables('vmNameDb'), ' -srvAppName ', variables('vmNameApp'), ' -storageAccountName ', parameters('resourcesStorageAccountName'), ' -storageAccountKey ', parameters('resourcesStorageAccountKey'), ' -vmAdminUsername ', parameters('vmAdminUsername'), ' -vmAdminPassword ', parameters('vmAdminPassword'))]",
+          "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File configure.srvdb.ps1 -environmentType ', toLower(parameters('environmentType')), ' -environmentNumber ', parameters('environmentNumber'), ' -srvDbName ', variables('vmNameDb'), ' -srvAppName ', variables('vmNameApp'), ' -storageAccountName ', parameters('resourcesStorageAccountName'), ' -storageAccountKey ', parameters('resourcesStorageAccountKey'), ' -vmAdminUsername ', parameters('vmAdminUsername'), ' -vmAdminPassword ', parameters('vmAdminPassword'))]",
           "storageAccountName": "[parameters('resourcesStorageAccountName')]",
           "storageAccountKey": "[parameters('resourcesStorageAccountKey')]"
         },
@@ -418,14 +429,14 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]",
-        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountBackupName'))]"
+        "[resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountBackupName'))]"
       ],
       "properties": {
         "publisher": "Microsoft.SqlServer.Management",
         "settings": {
           "AutoTelemetrySettings": {
             "Region": "[resourceGroup().location]"
-          },     
+          },
           "AutoBackupSettings": {
             "Enable": true,
             "RetentionPeriod": "[variables('backupDelay')]",
@@ -439,15 +450,15 @@
             "DayOfWeek": "[variables('sqlAutopatchingDayOfWeek')]",
             "MaintenanceWindowStartingHour": "[variables('sqlAutopatchingStartHour')]",
             "MaintenanceWindowDuration": "[variables('sqlAutopatchingWindowDuration')]"
-        },   
-        "ServerConfigurationsManagementSettings": {
+          },
+          "ServerConfigurationsManagementSettings": {
             "SQLConnectivityUpdateSettings": {
               "ConnectivityType": "Private",
               "Port": "[variables('sqlPortNumber')]"
             },
             "SQLWorkloadTypeUpdateSettings": {
               "SQLWorkloadType": "GENERAL"
-            },           
+            },
             "AdditionalFeaturesServerConfigurations": {
               "IsRServicesEnabled": false
             }
@@ -494,7 +505,8 @@
             "adminPassword": "[parameters('vmAdminPassword')]",
             "windowsConfiguration": {
               "provisionVMAgent": true,
-              "enableAutomaticUpdates": true
+              "enableAutomaticUpdates": true,              
+              "timeZone": "Romance Standard Time" 
             },
             "secrets": []
           },
@@ -505,7 +517,7 @@
               "managedDisk": {
                 "storageAccountType": "Standard_LRS"
               },
-              "diskSizeGB": 128            
+              "diskSizeGB": 128
             },
             "imageReference": {
               "publisher": "MicrosoftWindowsServer",
@@ -557,7 +569,7 @@
                 "typeHandlerVersion": "1.9",
                 "autoUpgradeMinorVersion": true,
                 "protectedSettings": {
-                  "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File configure.srvweb.ps1 -environmentType ', toLower(parameters('environmentType')), ' -srvDbName ', variables('vmNameDb'), ' -srvAppName ', variables('vmNameApp'), ' -storageAccountName ', parameters('resourcesStorageAccountName'), ' -storageAccountKey ', parameters('resourcesStorageAccountKey'), ' -vmAdminUsername ', parameters('vmAdminUsername'), ' -vmAdminPassword ', parameters('vmAdminPassword'))]",
+                  "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File configure.srvweb.ps1 -environmentType ', toLower(parameters('environmentType')), ' -environmentNumber ', parameters('environmentNumber'), ' -srvDbName ', variables('vmNameDb'), ' -srvAppName ', variables('vmNameApp'), ' -customWebDomains ', replace(replace(string(parameters('customWebDomains')), '[', ''), ']', ''), ' -storageAccountName ', parameters('resourcesStorageAccountName'), ' -storageAccountKey ', parameters('resourcesStorageAccountKey'), ' -vmAdminUsername ', parameters('vmAdminUsername'), ' -vmAdminPassword ', parameters('vmAdminPassword'))]",
                   "storageAccountName": "[parameters('resourcesStorageAccountName')]",
                   "storageAccountKey": "[parameters('resourcesStorageAccountKey')]"
                 },
@@ -843,53 +855,6 @@
       "scale": null,
       "properties": {
         "defaultSecurityRules": [{
-            "name": "AllowAccessHTTP",
-            "properties": {
-              "description": "Allow inbound HTTP traffic from Internet",
-              "protocol": "*",
-              "sourcePortRange": "*",
-              "destinationPortRange": "[variables('lbScaleSetWebProbePortHttp')]",
-              "sourceAddressPrefix": "Internet",
-              "destinationAddressPrefix": "VirtualNetwork",
-              "access": "Allow",
-              "priority": 200,
-              "direction": "Inbound",
-              "sourceAddressPrefixes": [],
-              "destinationAddressPrefixes": []
-            }
-          },
-          {
-            "name": "AllowAccessHTTPS",
-            "properties": {
-              "description": "Allow inbound HTTPS traffic from Internet",
-              "protocol": "*",
-              "sourcePortRange": "*",
-              "destinationPortRange": "[variables('lbScaleSetWebProbePortHttps')]",
-              "sourceAddressPrefix": "Internet",
-              "destinationAddressPrefix": "VirtualNetwork",
-              "access": "Allow",
-              "priority": 210,
-              "direction": "Inbound",
-              "sourceAddressPrefixes": [],
-              "destinationAddressPrefixes": []
-            }
-          },
-          {
-            "name": "AllowAccessImportP2P",
-            "properties": {
-              "description": "Allow inbound Import P2P traffic",
-              "protocol": "*",
-              "sourcePortRange": "*",
-              "destinationPortRange": "[variables('lbScaleSetWebProbePortImportP2P')]",
-              "destinationAddressPrefix": "VirtualNetwork",
-              "access": "Allow",
-              "priority": 300,
-              "direction": "Inbound",
-              "sourceAddressPrefixes": "[parameters('authorizedImportP2PIpAddresses')]",
-              "destinationAddressPrefixes": []
-            }
-          },
-          {
             "name": "AllowVnetInBound",
             "properties": {
               "description": "Allow inbound traffic from all VMs in VNET",
@@ -985,6 +950,54 @@
               "destinationAddressPrefixes": []
             }
           }
+        ],
+        "securityRules": [{
+            "name": "AllowAccessHTTP",
+            "properties": {
+              "description": "Allow inbound HTTP traffic from Internet",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "[variables('lbScaleSetWebProbePortHttp')]",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 200,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowAccessHTTPS",
+            "properties": {
+              "description": "Allow inbound HTTPS traffic from Internet",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "[variables('lbScaleSetWebProbePortHttps')]",
+              "sourceAddressPrefix": "Internet",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 210,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": [],
+              "destinationAddressPrefixes": []
+            }
+          },
+          {
+            "name": "AllowAccessImportP2P",
+            "properties": {
+              "description": "Allow inbound Import P2P traffic",
+              "protocol": "*",
+              "sourcePortRange": "*",
+              "destinationPortRange": "[variables('lbScaleSetWebProbePortImportP2P')]",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "access": "Allow",
+              "priority": 1000,
+              "direction": "Inbound",
+              "sourceAddressPrefixes": "[take(parameters('authorizedImportP2PIpAddresses'),2)]",
+              "destinationAddressPrefixes": []
+            }
+          }
         ]
       },
       "tags": {
@@ -993,6 +1006,35 @@
         "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": []
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
+      "name":
+        "[concat(variables('networkSecurityGroupNameFrontend'), '/','AllowAccessImportP2P', copyIndex())]",
+      "apiVersion": "2017-10-01",
+      "copy": {
+        "name": "pauthorizedImportP2PIpAddressesItemsCopy",
+        "count": "[length(parameters('authorizedImportP2PIpAddresses'))]"
+      },
+      "scale": null,
+      "properties": {
+        "protocol": "*",
+        "sourcePortRange": "*",
+        "destinationPortRange":
+          "[variables('lbScaleSetWebProbePortImportP2P')]",
+        "destinationAddressPrefix": "VirtualNetwork",
+        "access": "Allow",
+        "priority": "[add(1001, copyIndex())]",
+        "direction": "Inbound",
+        "sourcePortRanges": [],
+        "destinationPortRanges": [],
+        "sourceAddressPrefixes":
+          ["[parameters('authorizedImportP2PIpAddresses')[copyIndex()]]"],
+        "destinationAddressPrefixes": []
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameFrontend'))]"
+      ]
     },
     {
       "type": "Microsoft.Network/networkSecurityGroups",
@@ -1097,7 +1139,24 @@
               "destinationAddressPrefixes": []
             }
           }
-        ]
+        ],
+        "securityRules": [{
+          "name": "AllowStorage",
+          "properties": {
+            "protocol": "*",
+            "sourcePortRange": "*",
+            "sourceAddressPrefix": "[concat('Storage.', resourceGroup().location)]",
+            "destinationAddressPrefix": "*",
+            "access": "Allow",
+            "priority": 1000,
+            "direction": "Inbound",
+            "sourcePortRanges": [],
+            "destinationPortRanges": ["80", "443"],
+            "sourceAddressPrefixes": [],
+            "destinationAddressPrefixes": [],
+            "destinationPortRange": null
+          }
+        }]
       },
       "tags": {
         "PlatformName": "[parameters('environmentName')]",
@@ -1105,74 +1164,6 @@
         "PlatformNumber": "[parameters('environmentNumber')]"
       },
       "dependsOn": []
-    },
-    {
-      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
-      "name": "[concat(variables('networkSecurityGroupNameFrontend'), '/','AllowAccessHTTP')]",
-      "apiVersion": "2017-10-01",
-      "scale": null,
-      "properties": {
-        "protocol": "*",
-        "sourcePortRange": "*",
-        "destinationPortRange": "[variables('lbScaleSetWebProbePortHttp')]",
-        "sourceAddressPrefix": "Internet",
-        "destinationAddressPrefix": "VirtualNetwork",
-        "access": "Allow",
-        "priority": 200,
-        "direction": "Inbound",
-        "sourcePortRanges": [],
-        "destinationPortRanges": [],
-        "sourceAddressPrefixes": [],
-        "destinationAddressPrefixes": []
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameFrontend'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
-      "name": "[concat(variables('networkSecurityGroupNameFrontend'), '/','AllowAccessHTTPS')]",
-      "apiVersion": "2017-10-01",
-      "scale": null,
-      "properties": {
-        "protocol": "*",
-        "sourcePortRange": "*",
-        "destinationPortRange": "[variables('lbScaleSetWebProbePortHttps')]",
-        "sourceAddressPrefix": "Internet",
-        "destinationAddressPrefix": "VirtualNetwork",
-        "access": "Allow",
-        "priority": 210,
-        "direction": "Inbound",
-        "sourcePortRanges": [],
-        "destinationPortRanges": [],
-        "sourceAddressPrefixes": [],
-        "destinationAddressPrefixes": []
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameFrontend'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.Network/networkSecurityGroups/securityRules",
-      "name": "[concat(variables('networkSecurityGroupNameFrontend'), '/','AllowAccessImportP2P')]",
-      "apiVersion": "2017-10-01",
-      "scale": null,
-      "properties": {
-        "protocol": "*",
-        "sourcePortRange": "*",
-        "destinationPortRange": "[variables('lbScaleSetWebProbePortImportP2P')]",
-        "destinationAddressPrefix": "VirtualNetwork",
-        "access": "Allow",
-        "priority": 300,
-        "direction": "Inbound",
-        "sourcePortRanges": [],
-        "destinationPortRanges": [],
-        "sourceAddressPrefixes": "[parameters('authorizedImportP2PIpAddresses')]",
-        "destinationAddressPrefixes": []
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameFrontend'))]"
-      ]
     },
     {
       "type": "Microsoft.Network/publicIPAddresses",
@@ -1437,7 +1428,12 @@
         "PlatformName": "[parameters('environmentName')]",
         "PlatformType": "[parameters('environmentType')]",
         "PlatformNumber": "[parameters('environmentNumber')]"
-      }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameBackend'))]",
+        "[concat(resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb')), '/extensions/', 'configureScript-', variables('vmNameDb'))]",
+        "[concat(resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameApp')), '/extensions/', 'configureScript-', variables('vmNameApp'))]"
+      ]
     },
     {
       "type": "Microsoft.RecoveryServices/vaults/backupPolicies",
@@ -1474,7 +1470,7 @@
       "dependsOn": [
         "[resourceId('Microsoft.RecoveryServices/vaults', variables('recoveryServiceVaultName'))]"
       ]
-    }, 
+    },
     {
       "type": "Microsoft.RecoveryServices/vaults/backupFabrics/protectionContainers/protectedItems",
       "name": "[concat(variables('recoveryServiceVaultName'), '/', variables('backupFabric'), '/', variables('v2VmContainer'), concat(resourceGroup().name,';',variables('vmsToProtect')[copyIndex()]), '/', variables('v2Vm'), concat(resourceGroup().name,';',variables('vmsToProtect')[copyIndex()]))]",
@@ -1496,9 +1492,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.RecoveryServices/vaults', variables('recoveryServiceVaultName'))]",
-        "[resourceId('Microsoft.RecoveryServices/vaults/backupPolicies',variables('recoveryServiceVaultName'),variables('backupPolicyName'))]",
-        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameApp'))]",
-        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]"
+        "[resourceId('Microsoft.RecoveryServices/vaults/backupPolicies',variables('recoveryServiceVaultName'),variables('backupPolicyName'))]"     
       ]
     },
     {
@@ -1523,7 +1517,7 @@
       "apiVersion": "2017-06-01",
       "scale": null,
       "properties": {
-        "addressPrefix": "[variables('subnetBackendAddressPrefix')]",     
+        "addressPrefix": "[variables('subnetBackendAddressPrefix')]",
         "networkSecurityGroup": {
           "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupNameBackend'))]"
         }
@@ -1602,7 +1596,7 @@
           ]
         }]
       },
-       "tags": {
+      "tags": {
         "PlatformName": "[parameters('environmentName')]",
         "PlatformType": "[parameters('environmentType')]",
         "PlatformNumber": "[parameters('environmentNumber')]"
