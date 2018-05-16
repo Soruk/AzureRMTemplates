@@ -99,7 +99,7 @@
       }
     },
     "authorizedImportP2PIpAddresses": {
-      "defaultValue": ["127.0.0.1", "1.1.1.1"],
+      "defaultValue": [["127.0.0.1", "1.1.1.1"]],
       "type": "array",
       "metadata": {
         "description": "The array of pulblic IP addresses authorized to use Import P2P functionality."
@@ -133,10 +133,10 @@
     "srvDbName": "srvdb",
     "vmNameDb": "[concat(variables('srvDbName'), '-', toLower(variables('environmentInfix')), '-vm')]",
     "networkInterfaceNameVMDb": "[concat(variables('srvDbName'), '-', toLower(variables('environmentInfix')), '-nic')]",
-    "srvappName": "srvapp",
+    "srvappName": "srvap",
     "vmNameApp": "[concat(variables('srvappName'), '-', toLower(variables('environmentInfix')), '-vm')]",
     "networkInterfaceNameVMApp": "[concat(variables('srvappName'), '-', toLower(variables('environmentInfix')), '-nic')]",
-    "srvWebName": "srvweb",
+    "srvWebName": "srvww",
     "vmScaleSetWebName": "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss')]",
     "lbScaleSetWebName": "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-lb')]",
     "lbScaleSetWebBackendPoolName": "[concat(variables('srvWebName'), '-', toLower(variables('environmentInfix')), '-ss-lb-bp')]",
@@ -994,7 +994,7 @@
               "access": "Allow",
               "priority": 1000,
               "direction": "Inbound",
-              "sourceAddressPrefixes": "[take(parameters('authorizedImportP2PIpAddresses'),2)]",
+              "sourceAddressPrefixes": "[first(parameters('authorizedImportP2PIpAddresses'))]",
               "destinationAddressPrefixes": []
             }
           }
@@ -1013,7 +1013,7 @@
         "[concat(variables('networkSecurityGroupNameFrontend'), '/','AllowAccessImportP2P', copyIndex())]",
       "apiVersion": "2017-10-01",
       "copy": {
-        "name": "pauthorizedImportP2PIpAddressesItemsCopy",
+        "name": "authorizedImportP2PIpAddressesItemsCopy",
         "count": "[length(parameters('authorizedImportP2PIpAddresses'))]"
       },
       "scale": null,
@@ -1029,7 +1029,7 @@
         "sourcePortRanges": [],
         "destinationPortRanges": [],
         "sourceAddressPrefixes":
-          ["[parameters('authorizedImportP2PIpAddresses')[copyIndex()]]"],
+          "[parameters('authorizedImportP2PIpAddresses')[copyIndex()]]",
         "destinationAddressPrefixes": []
       },
       "dependsOn": [
