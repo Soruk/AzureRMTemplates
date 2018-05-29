@@ -1154,7 +1154,7 @@
             "destinationPortRanges": ["80", "443"],
             "sourceAddressPrefixes": [],
             "destinationAddressPrefixes": [],
-            "destinationPortRange": null
+            "destinationPortRange": []
           }
         }]
       },
@@ -1306,7 +1306,7 @@
     {
       "type": "Microsoft.Storage/storageAccounts",
       "sku": {
-        "name": "Standard_LRS",
+        "name": "Standard_ZRS",
         "tier": "Standard"
       },
       "kind": "Storage",
