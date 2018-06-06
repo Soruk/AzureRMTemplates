@@ -319,6 +319,36 @@
       ]
     },
     {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmNameApp'), '/', 'antimalwareIaaSExtension-', variables('vmNameApp'))]",
+      "apiVersion": "2017-12-01",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameApp'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Security",
+        "type": "IaaSAntimalware",
+        "typeHandlerVersion": "1.5",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "AntimalwareEnabled": true,
+          "Exclusions": {
+            "Paths": "C:\\Users",
+            "Extensions": ".txt",
+            "Processes": "taskmgr.exe"
+          },
+          "RealtimeProtectionEnabled": true,
+          "ScheduledScanSettings": {
+            "isEnabled": "true",
+            "scanType": "Full",
+            "day": "7",
+            "time": "300"
+          }
+        }
+      }
+    },
+    {
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('vmNameDb')]",
       "apiVersion": "2017-03-30",
@@ -398,7 +428,7 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]",
-        "[concat(resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb')), '/extensions/', 'sqlIaasExtension-', variables('vmNameDb'))]"
+        "[concat(resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb')), '/extensions/', 'sqlIaaSExtension-', variables('vmNameDb'))]"
       ],
       "properties": {
         "publisher": "Microsoft.Compute",
@@ -423,9 +453,39 @@
       }
     },
     {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmNameDb'), '/', 'antimalwareIaaSExtension-', variables('vmNameDb'))]",
+      "apiVersion": "2017-12-01",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Security",
+        "type": "IaaSAntimalware",
+        "typeHandlerVersion": "1.5",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "AntimalwareEnabled": true,
+          "Exclusions": {
+            "Paths": "C:\\Users",
+            "Extensions": ".txt",
+            "Processes": "taskmgr.exe"
+          },
+          "RealtimeProtectionEnabled": true,
+          "ScheduledScanSettings": {
+            "isEnabled": "true",
+            "scanType": "Full",
+            "day": "7",
+            "time": "300"
+          }
+        }
+      }
+    },
+    {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('vmNameDb'), '/', 'sqlIaasExtension-', variables('vmNameDb'))]",
+      "name": "[concat(variables('vmNameDb'), '/', 'sqlIaaSExtension-', variables('vmNameDb'))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]",
@@ -440,9 +500,13 @@
           "AutoBackupSettings": {
             "Enable": true,
             "RetentionPeriod": "[variables('backupDelay')]",
-            "BackupScheduleType": "automated",
+            "BackupScheduleType": "manual",
             "BackupSystemDbs": false,
-            "EnableEncryption": true
+            "EnableEncryption": true,
+            "FullBackupFrequency": "Daily",
+            "FullBackupStartTime": "20",
+            "FullBackupWindowHours": "6",
+            "LogBackupFrequency": "60"
           },
           "AutoPatchingSettings": {
             "PatchCategory": "WindowsMandatoryUpdates",
@@ -575,6 +639,30 @@
                 },
                 "type": "CustomScriptExtension"
               }
+            },
+            {
+              "name": "antimalwareIaaSExtension",
+              "properties": {
+                "publisher": "Microsoft.Azure.Security",
+                "type": "IaaSAntimalware",
+                "typeHandlerVersion": "1.5",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                  "AntimalwareEnabled": true,
+                  "Exclusions": {
+                    "Paths": "C:\\Users",
+                    "Extensions": ".txt",
+                    "Processes": "taskmgr.exe"
+                  },
+                  "RealtimeProtectionEnabled": true,
+                  "ScheduledScanSettings": {
+                    "isEnabled": "true",
+                    "scanType": "Full",
+                    "day": "7",
+                    "time": "300"
+                  }
+                }              
+               }
             }]
           }
         },
