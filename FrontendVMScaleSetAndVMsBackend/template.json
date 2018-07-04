@@ -200,7 +200,8 @@
     "sqlServerImageOffer": "SQL2016SP2-WS2016",
     "sqlAutopatchingDayOfWeek": "Sunday",
     "sqlAutopatchingStartHour": 4,
-    "sqlAutopatchingWindowDuration": 60
+    "sqlAutopatchingWindowDuration": 60,
+    "sqlFullBackupStartTime" : 20
   },
   "outputs": {},
   "resources": [{
@@ -504,7 +505,7 @@
             "BackupSystemDbs": false,
             "EnableEncryption": true,
             "FullBackupFrequency": "Daily",
-            "FullBackupStartTime": "20",
+            "FullBackupStartTime": "[variables('sqlFullBackupStartTime')]",
             "FullBackupWindowHours": "6",
             "LogBackupFrequency": "60"
           },
