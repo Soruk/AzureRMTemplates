@@ -48,13 +48,6 @@
         "description": "Type size of deployed Db VM."
       }
     },
-    "vmDbBYOL": {
-      "defaultValue": false,
-      "type": "bool",
-      "metadata": {
-        "description": "Choose to use own license."
-      }
-    },
     "vmSizeApp": {
       "defaultValue": "Standard_B2s",
       "allowedValues": ["Standard_B2s", "Standard_D2s_v3", "Standard_D4s_v3"],
@@ -350,6 +343,29 @@
       }
     },
     {
+      "apiVersion": "2017-12-01",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmNameApp'),'/', 'bgInfo-', variables('vmNameApp'))]",     
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameApp'))]"
+      ],
+      "properties": {
+          "publisher": "Microsoft.Compute",
+          "type": "BGInfo",
+          "typeHandlerVersion": "2.1",
+          "autoUpgradeMinorVersion": true,
+          "settings": {
+              "Properties": []
+          }
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
+      }
+    },
+    {
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[variables('vmNameDb')]",
       "apiVersion": "2017-03-30",
@@ -481,6 +497,29 @@
             "time": "300"
           }
         }
+      }
+    },
+    {
+      "apiVersion": "2017-12-01",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmNameDb'),'/', 'bgInfo-', variables('vmNameDb'))]",     
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmNameDb'))]"
+      ],
+      "properties": {
+          "publisher": "Microsoft.Compute",
+          "type": "BGInfo",
+          "typeHandlerVersion": "2.1",
+          "autoUpgradeMinorVersion": true,
+          "settings": {
+              "Properties": []
+          }
+      },
+      "tags": {
+        "PlatformName": "[parameters('environmentName')]",
+        "PlatformType": "[parameters('environmentType')]",
+        "PlatformNumber": "[parameters('environmentNumber')]"
       }
     },
     {
@@ -664,7 +703,20 @@
                   }
                 }              
                }
-            }]
+            },
+            {             
+              "name": "bgInfo",                
+              "properties": {
+                  "publisher": "Microsoft.Compute",
+                  "type": "BGInfo",
+                  "typeHandlerVersion": "2.1",
+                  "autoUpgradeMinorVersion": true,
+                  "settings": {
+                      "Properties": []
+                  }
+              }              
+            }
+            ]
           }
         },
         "overprovision": true
