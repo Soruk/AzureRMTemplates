@@ -4,55 +4,46 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "environmentName": {
-      "value": null
+      "value": "myPlatform"
     },
     "environmentNumber": {
-      "value": null
+      "value": 1
     },
     "environmentType": {
-      "value": null
+      "value": "Dev"
     },
     "availibiltyZone": {
-      "value": null
+      "value": 1
     },
     "vmSizeWeb": {
-      "value": null
+      "value": "Standard_B2s"
     },
     "vmSizeDb": {
-      "value": null
-    },
-    "vmDbBYOL":{
-      "value": null
-    },
+      "value": "Standard_B2s"
+    },    
     "vmSizeApp": {
-      "value": null
+      "value": "Standard_B2s"
     },
     "vmAdminUsername": {
-      "value": null
+      "value": "vmAdminName"
     },
     "vmAdminPassword": {
-      "value": null
+      "value": "vmAdminPwd"
     },
     "instancesCount": {
-      "value": null
-    },
-    "deployVirtualNetworkGateway":{
-      "value": null
-    },
-    "localGatewayIpAddress": {
-      "value": null
-    },
+      "value": 1
+    },  
     "authorizedImportP2PIpAddresses": {
-      "value": null
+      "value": [["127.0.0.1", "1.1.1.1"]]
     },
     "customWebDomains":{
-      "value": null
+      "value":  ["name1.mydomain.com", "name2.mydomain.com"]
     },
     "resourcesStorageAccountName": {
-      "value": null
+      "value": "storageAccountName"
     },
     "resourcesStorageAccountKey": {
-      "value": null
+      "value": "storageAccountKey"
     }
   }
 }
